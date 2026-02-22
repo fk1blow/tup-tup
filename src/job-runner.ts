@@ -10,6 +10,7 @@ export class JobRunner {
   }
 
   async run() {
+    Bun.spawn(this.job.cmd)
     // await this.job.execute()
   }
 }
