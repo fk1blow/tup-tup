@@ -59,22 +59,28 @@ async function* generateNumbers() {
 class UsingALoopGenerator {
   private async *gen(n: number) {
     for (let i = 0; i < n; i++) {
+      await new Promise(resolve => setTimeout(resolve, i * 1000))
       yield i
     }
   }
 
   async run() {
-    const genNext = this.gen(3)
+    const genNext = this.gen(10)
 
-    console.log(await genNext.next())
-    console.log(await genNext.next())
-    console.log(await genNext.next())
-    console.log(await genNext.next())
-    console.log(await genNext.next())
+    // console.log(await genNext.next())
+    // console.log(await genNext.next())
+    // console.log(await genNext.next())
+    // console.log(await genNext.next())
+    // console.log(await genNext.next())
+    for await (const value of genNext) {
+      console.log('value: ', value)
+    }
   }
 }
 
-new UsingALoopGenerator().run()
+const usingALoopInstance = new UsingALoopGenerator()
+const f = await usingALoopInstance.run()
+console.log('f:', f)
 
 // Example 5:...
 //
