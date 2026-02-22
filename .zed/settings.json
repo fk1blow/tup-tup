@@ -1,0 +1,67 @@
+{
+  "features": {
+    "edit_prediction_provider": "copilot",
+  },
+  "vim": {
+    "use_system_clipboard": "never",
+  },
+  "tab_size": 2,
+  "hard_tabs": false,
+  "languages": {
+    "TypeScript": {
+      "show_edit_predictions": true,
+      "language_servers": ["typescript-language-server", "!biome"],
+      "formatter": {
+        "external": {
+          "command": "node_modules/.bin/biome",
+          "arguments": ["format", "--stdin-file-path", "{buffer_path}"],
+        },
+      },
+      "code_actions_on_format": {
+        "source.addMissingImports": true,
+        "source.organizeImports": true,
+      },
+    },
+    "JavaScript": {
+      "show_edit_predictions": true,
+      "language_servers": ["typescript-language-server", "!biome"],
+      "formatter": {
+        "external": {
+          "command": "node_modules/.bin/biome",
+          "arguments": ["format", "--stdin-file-path", "{buffer_path}"],
+        },
+      },
+      "code_actions_on_format": {
+        "source.addMissingImports": true,
+        "source.organizeImports": true,
+      },
+    },
+    "JSON": {
+      "language_servers": ["json-language-server", "!biome"],
+      "formatter": {
+        "external": {
+          "command": "node_modules/.bin/biome",
+          "arguments": ["format", "--stdin-file-path", "{buffer_path}"],
+        },
+      },
+    },
+  },
+  "format_on_save": "on",
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "includeCompletionsForModuleExports": true,
+          "includeCompletionsWithInsertText": true,
+          "allowIncompleteCompletions": true,
+        },
+      },
+    },
+    "biome": {
+      "binary": {
+        "path": "node_modules/.bin/biome",
+        "arguments": ["lsp-proxy"],
+      },
+    },
+  },
+}
