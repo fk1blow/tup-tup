@@ -1,3 +1,10 @@
+// Resources:
+// https://jrsinclair.com/articles/2022/why-would-anyone-need-javascript-generator-functions/
+// https://gist.github.com/mattpodwysocki/1d0fe43961c6222571386568b8a5ef23
+// https://github.com/getify/CAF
+// https://nearform.com/digital-community/javascript-power-tools-redux-saga/
+//
+
 // Example 1: Creating an async iterable class
 //
 
