@@ -46,21 +46,28 @@ async function* generateNumbers() {
 // const result = await Array.fromAsync(generateNumbers())
 // console.log(result) // [1, 2, 3]
 
-// Example 4: using a loop
+// Example 4: using a classic for loop
 //
 
-async function* gen(n: number) {
-  for (let i = 0; i < n; i++) {
-    yield i
+class UsingALoopGenerator {
+  private async *gen(n: number) {
+    for (let i = 0; i < n; i++) {
+      yield i
+    }
+  }
+
+  async run() {
+    const genNext = this.gen(3)
+
+    console.log(await genNext.next())
+    console.log(await genNext.next())
+    console.log(await genNext.next())
+    console.log(await genNext.next())
+    console.log(await genNext.next())
   }
 }
 
-const genNext = gen(3)
-console.log(await genNext.next())
-console.log(await genNext.next())
-console.log(await genNext.next())
-console.log(await genNext.next())
-console.log(await genNext.next())
+new UsingALoopGenerator().run()
 
 // Example 5:...
 //
