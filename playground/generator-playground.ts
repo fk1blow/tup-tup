@@ -137,5 +137,43 @@ setTimeout(() => {
   gate.resolve('resolved from somwhere over the rainbow')
 }, 2000)
 
-const res = await gate.promise
-console.log('res:', res)
+// const res = await gate.promise
+// console.log('res:', res)
+
+//
+// Task Runner using deferred to manage task completion
+
+class TaskRunner {
+  private gate = deferred<void>()
+
+  async run(tasks: string[][]) {
+    try {
+      for (const args of tasks) {
+        const proc = Bun.spawn(args, { stdout: 'inherit', stderr: 'inherit' })
+        const exitCode = await proc.exited
+        if (exitCode !== 0) {
+          this.gate.reject(new Error(`Task failed: ${args.join(' ')} (exit ${exitCode})`))
+          return
+        }
+      }
+      this.gate.resolve()
+    } catch (e) {
+      this.gate.reject(e)
+    }
+  }
+
+  get done() {
+    return this.gate.promise
+  }
+}
+
+// consumer
+const runner = new TaskRunner()
+runner.run([
+  ['bun', '--version'],
+  ['echo', 'hello'],
+  ['echo', 'world'],
+])
+
+await runner.done
+console.log('pipeline complete!')
