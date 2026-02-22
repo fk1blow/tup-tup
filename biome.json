@@ -36,6 +36,7 @@
   "files": {
     "includes": [
       "src/**/*.{ts,tsx,js,jsx}",
+      "playground/**/*.{ts,tsx,js,jsx}",
       "src/**/*.json",
       "*.ts",
       "biome.json",
