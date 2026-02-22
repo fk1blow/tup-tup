@@ -1,10 +1,9 @@
-import { z } from 'zod'
-import { Job } from './job.types'
+import { JobDefinition } from './job.types'
 
-export class JobRunner {
-  private job: Job
+export class Job {
+  private job: JobDefinition
 
-  constructor(job: Job) {
+  constructor(job: JobDefinition) {
     console.log('Initializing JobRunner with job:', job.name)
     this.job = job
   }
@@ -17,7 +16,7 @@ export class JobRunner {
 
 const args = process.argv.slice(2)
 
-const parsedJob = Job.safeParse({
+const parsedJob = JobDefinition.safeParse({
   name: args[0],
   cmd: args.slice(1),
 })
@@ -30,4 +29,4 @@ if (!parsedJob.success) {
   process.exit(1)
 }
 
-const runner = new JobRunner(parsedJob.data)
+const runner = new JobDefinition(parsedJob.data)
