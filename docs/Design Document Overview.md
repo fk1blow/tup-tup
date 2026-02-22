@@ -2,6 +2,23 @@
 
 A personal, lightweight CI pipeline built with Bun. Serial execution to start, designed for a homeserver. Learning project.
 
+## Overview
+
+Orchestrator:
+
+- has a list of jobs, a pipeline
+- state(which job, orchestration)
+- runs each job in serial order
+- receives messages from Jobs via ipc
+- closes the pipeline if a Job errors
+
+Job:
+
+- has a name and a command
+- runs the command
+- handles the stderr of the command
+- sends msg to Orchestrator on command's stderr
+
 ## Orchestrator
 
 The central piece. Responsible for:
