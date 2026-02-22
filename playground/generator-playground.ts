@@ -5,8 +5,8 @@
 // https://nearform.com/digital-community/javascript-power-tools-redux-saga/
 //
 
-// Example 1: Creating an async iterable class
 //
+// Example 1: Creating an async iterable class
 
 class AsyncIterableClass {
   async *[Symbol.asyncIterator]() {
@@ -25,8 +25,8 @@ class AsyncIterableClass {
 
 // Alternatively, you can also create an async iterator using an async generator function:
 
-// Example 2: Using an async generator function to create an async iterator
 //
+// Example 2: Using an async generator function to create an async iterator
 
 const asyncIterator = (async function* () {
   yield 1
@@ -40,8 +40,8 @@ const asyncIterator = (async function* () {
 //   console.log(value)
 // }
 
-// Example 3: Using Array.fromAsync to consume an async iterable
 //
+// Example 3: Using Array.fromAsync to consume an async iterable
 
 async function* generateNumbers() {
   yield 1
@@ -54,7 +54,6 @@ async function* generateNumbers() {
 // console.log(result) // [1, 2, 3]
 
 // Example 4: using a classic for loop
-//
 
 class UsingALoopGenerator {
   private async *gen(n: number) {
@@ -68,7 +67,7 @@ class UsingALoopGenerator {
     const genNext = this.gen(10)
 
     // console.log(await genNext.next())
-    // console.log(await genNext.next())
+
     // console.log(await genNext.next())
     // console.log(await genNext.next())
     // console.log(await genNext.next())
@@ -78,12 +77,12 @@ class UsingALoopGenerator {
   }
 }
 
-const usingALoopInstance = new UsingALoopGenerator()
-const f = await usingALoopInstance.run()
-console.log('f:', f)
+// const usingALoopInstance = new UsingALoopGenerator()
+// const f = await usingALoopInstance.run()
+// console.log('f:', f)
 
-// Example 5:...
 //
+// Example ...
 
 const sourceFunction = async function* () {
   yield Promise.resolve(1)
@@ -117,3 +116,26 @@ const sourceFunction = async function* () {
 // while (!(next = await it.next()).done) {
 //   console.log(next.value)
 // }
+
+//
+// deferred
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: any) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+const gate = deferred<string>()
+
+// somewhere else, later...
+setTimeout(() => {
+  gate.resolve('resolved from somwhere over the rainbow')
+}, 2000)
+
+const res = await gate.promise
+console.log('res:', res)
