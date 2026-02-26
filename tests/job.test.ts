@@ -219,7 +219,10 @@ describe('Job', () => {
 
       const { messages } = await spawnJob({
         name: 'Test Job writing logs',
-        commands: [['echo', 'hello']],
+        commands: [
+          ['echo', 'hello'],
+          ['echo', 'world'],
+        ],
         logsDir: logsDir,
       })
     })

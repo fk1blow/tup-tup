@@ -148,9 +148,12 @@ export class Job {
   }
 
   private async attachStreamHandlers(subprocess: JobSubprocess) {
+    // TODO move all this setup to a separate method or class
     const logFile = Bun.file(
       `${this.job.logsDir}/${this.job.name.replace(/\s+/g, '_')}.log`,
     )
+    // TODO need to append to the log file instead of overwriting it
+    // see node's `createWriteStream("output.log", { flags: "a" })`
     const logStream = logFile.writer()
     const decoder = new TextDecoder()
 
@@ -197,6 +200,7 @@ export class Job {
       stderrPipeError = err instanceof Error ? err.message : String(err)
     })
 
+    // TODO move this to a separate method or class
     await Promise.all([stdoutDone, stderrDone]).finally(() => {
       logStream.flush()
       logStream.end()
