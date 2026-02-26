@@ -1,15 +1,17 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import {
-  commandFinished,
-  commandStarted,
-  exitedResult,
-  failedToStartResult,
-  findMessage,
-  jobFinished,
-  jobStarted,
-  killedResult,
-  spawnJob,
-} from './job.test-helpers'
+    commandFinished,
+    commandStarted,
+    exitedResult,
+    failedToStartResult,
+    findMessage,
+    jobFinished,
+    jobStarted,
+    killedResult,
+    spawnJob,
+} from '../src/job.test-helpers'
 
 describe('Job', () => {
   describe('Exited', () => {
@@ -184,6 +186,20 @@ describe('Job', () => {
     test.skip('deferred - hard to simulate', async () => {
       // StreamError requires forcing a pipe failure
       // See discussion: dependency injection or unit test approach
+    })
+  })
+
+  describe.only('Job logging', async () => {
+    test('logs stdout and stderr correctly', async () => {
+      // Get the directory of the current module
+      const moduleDir = path.dirname(Bun.fileURLToPath(import.meta.url))
+
+      // Create a directory relative to the current module
+      const targetDir = path.join(moduleDir, 'test-logs')
+      await mkdir(targetDir, { recursive: true })
+
+      // `targetDir` is already the absolute path
+      console.log(targetDir)
     })
   })
 })

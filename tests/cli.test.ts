@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseJobDefinition } from './cli'
+import { parseJobDefinition } from '../src/cli'
 
 describe('Cli', () => {
   test('parses a job with a single commands', () => {
