@@ -1,24 +1,36 @@
-import { describe, expect, test } from 'bun:test'
-import { mkdir } from 'node:fs/promises'
-import path from 'node:path'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { rmSync } from 'node:fs'
 import {
-    commandFinished,
-    commandStarted,
-    exitedResult,
-    failedToStartResult,
-    findMessage,
-    jobFinished,
-    jobStarted,
-    killedResult,
-    spawnJob,
-} from '../src/job.test-helpers'
+  commandFinished,
+  commandStarted,
+  exitedResult,
+  failedToStartResult,
+  findMessage,
+  getLogsDir,
+  jobFinished,
+  jobStarted,
+  killedResult,
+  spawnJob,
+} from './job.test-helpers'
 
 describe('Job', () => {
+  let logsDir: string
+
+  beforeAll(async () => {
+    const result = await getLogsDir()
+    logsDir = result.targetDir
+  })
+
+  afterAll(() => {
+    // rmSync(logsDir, { recursive: true })
+  })
+
   describe('Exited', () => {
     test('single command success', async () => {
       const { messages } = await spawnJob({
         name: 'Test Job',
         commands: [['echo', 'hello world']],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -37,6 +49,7 @@ describe('Job', () => {
           ['sleep', '0.1'],
           ['echo', 'goodbye'],
         ],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -55,6 +68,7 @@ describe('Job', () => {
       const { messages } = await spawnJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'exit 1']],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -69,6 +83,7 @@ describe('Job', () => {
       const { messages } = await spawnJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'exit 42']],
+        logsDir,
       })
 
       const finishedMsg = findMessage(messages, 'command:finished')
@@ -83,6 +98,7 @@ describe('Job', () => {
           ['sh', '-c', 'exit 1'],
           ['echo', 'never runs'],
         ],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -101,6 +117,7 @@ describe('Job', () => {
       const { messages } = await spawnJob({
         name: 'Test Job',
         commands: [['nonexistent-command-xyz']],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -126,6 +143,7 @@ describe('Job', () => {
           ['nonexistent-command-xyz'],
           ['echo', 'never runs'],
         ],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -151,6 +169,7 @@ describe('Job', () => {
       const { messages } = await spawnJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'kill -TERM $$']],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -169,6 +188,7 @@ describe('Job', () => {
           ['sh', '-c', 'kill -TERM $$'],
           ['echo', 'never runs'],
         ],
+        logsDir,
       })
 
       expect(messages).toEqual([
@@ -191,15 +211,17 @@ describe('Job', () => {
 
   describe.only('Job logging', async () => {
     test('logs stdout and stderr correctly', async () => {
-      // Get the directory of the current module
-      const moduleDir = path.dirname(Bun.fileURLToPath(import.meta.url))
+      console.log('targetDir, timestamp:', logsDir)
+      // console.log('logsDir:', logsDir)
 
-      // Create a directory relative to the current module
-      const targetDir = path.join(moduleDir, 'test-logs')
-      await mkdir(targetDir, { recursive: true })
+      // const foo = Bun.file(path.join(logsDir, "foo.txt"))
+      // foo.write('This is stdout\n')
 
-      // `targetDir` is already the absolute path
-      console.log(targetDir)
+      const { messages } = await spawnJob({
+        name: 'Test Job writing logs',
+        commands: [['echo', 'hello']],
+        logsDir: logsDir,
+      })
     })
   })
 })

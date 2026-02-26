@@ -148,8 +148,15 @@ export class Job {
   }
 
   private async attachStreamHandlers(subprocess: JobSubprocess) {
+    const logFile = Bun.file(
+      `${this.job.logsDir}/${this.job.name.replace(/\s+/g, '_')}.log`,
+    )
+    const logStream = logFile.writer()
+    const decoder = new TextDecoder()
+
     const stdoutStream = new WritableStream({
       write: chunk => {
+        logStream.write(`${decoder.decode(chunk)} \n`)
         // console.log(
         //   `[${this.job.name}] stdout: ${new TextDecoder().decode(chunk)}`,
         // )
@@ -164,6 +171,7 @@ export class Job {
 
     const stderrStream = new WritableStream({
       write: chunk => {
+        logStream.write(`${decoder.decode(chunk)} \n`)
         // console.log(
         //   `[${this.job.name}] stderr: ${new TextDecoder().decode(chunk)}`,
         // )
@@ -183,12 +191,16 @@ export class Job {
       subprocess.kill()
       stdoutPipeError = err instanceof Error ? err.message : String(err)
     })
+
     const stderrDone = subprocess.stderr.pipeTo(stderrStream).catch(err => {
       subprocess.kill()
       stderrPipeError = err instanceof Error ? err.message : String(err)
     })
 
-    await Promise.all([stdoutDone, stderrDone])
+    await Promise.all([stdoutDone, stderrDone]).finally(() => {
+      logStream.flush()
+      logStream.end()
+    })
 
     return { stdoutPipeError, stderrPipeError }
   }

@@ -9,6 +9,7 @@ export const JobDefinition = z.object({
       z.array(z.string()).min(1, 'At least one command argument is required'),
     )
     .min(1, 'At least one command is required'),
+  logsDir: z.string().nonempty({ message: 'logsDir is required' }),
 })
 export type JobDefinition = z.infer<typeof JobDefinition>
 

@@ -9,6 +9,7 @@ describe('Cli', () => {
     expect(parsed).toEqual({
       name: 'Test Job',
       commands: [['echo', 'Hello, Test!']],
+      logsDir: '',
     })
   })
 
@@ -28,6 +29,7 @@ describe('Cli', () => {
         ['echo', 'Hello, Test!'],
         ['echo', 'Another command'],
       ],
+      logsDir: '',
     })
   })
 
