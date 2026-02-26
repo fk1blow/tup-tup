@@ -1,4 +1,11 @@
-import type { JobCommandResult, JobDefinition, JobMessage } from './job.types'
+import { existsSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
+import type {
+  JobCommandResult,
+  JobDefinition,
+  JobMessage,
+} from '../src/job.types'
 
 // Command Result Helpers
 
@@ -84,4 +91,20 @@ export const spawnJob = async (
   await process.exited
 
   return { process, messages }
+}
+
+export const getLogsDir = async (): Promise<{
+  targetDir: string
+  timestamp: string
+}> => {
+  const timestamp = Date.now().toString()
+
+  const moduleDir = path.dirname(Bun.fileURLToPath(import.meta.url))
+
+  const targetDir = path.join(moduleDir, 'test-logs', String(timestamp))
+  if (!existsSync(targetDir)) {
+    await mkdir(targetDir, { recursive: true })
+  }
+
+  return { targetDir, timestamp }
 }
