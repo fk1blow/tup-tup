@@ -30,7 +30,7 @@
       "semicolons": "asNeeded",
       "trailingCommas": "all",
       "arrowParentheses": "asNeeded",
-      "lineWidth": 100
+      "lineWidth": 80
     }
   },
   "files": {
