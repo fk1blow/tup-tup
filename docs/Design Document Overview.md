@@ -23,10 +23,10 @@ Job:
 
 The central piece. Responsible for:
 
-Reading and parsing the pipeline definition from a YAML file
-Managing job lifecycle in serial order
-Enforcing timeouts per job
-Deciding pipeline fate on job failure (fail-fast)
+- Reading and parsing the pipeline definition from a YAML file
+- Managing job lifecycle in serial order
+- Enforcing timeouts per job
+- Deciding pipeline fate on job failure (fail-fast)
 
 The sequence and order of jobs is derived directly from the YAML definition.
 
