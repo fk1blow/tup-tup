@@ -1,19 +1,23 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import type { Subprocess } from 'bun'
-import type EventEmitter from 'events'
+import type EventEmitter from 'node:events'
 import { Readable } from 'node:stream'
 import type { JobCommandResult, JobDefinition, JobEventMap } from './job.types'
+import { JobDefinition as JobDefinitionParser } from './job.types'
 
 type JobSubprocess = Subprocess<'inherit', 'pipe', 'pipe'>
 
 export class Job {
-  // private job: JobDefinition
-
   constructor(
     private job: JobDefinition,
     private events: EventEmitter<JobEventMap>,
     private logger: WritableStream<Uint8Array>,
-  ) {}
+  ) {
+    const { success, error } = JobDefinitionParser.safeParse(job)
+    if (!success) {
+      throw new Error(`Invalid job definition: ${error.message}`)
+    }
+  }
 
   async run() {
     let jobSucceeded = true

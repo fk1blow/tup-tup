@@ -1,9 +1,9 @@
 import { EventEmitter } from 'node:events'
 import { Job } from '../src/job'
-import type {
-  JobCommandResult,
+import {
   JobDefinition,
-  JobEventMap,
+  type JobCommandResult,
+  type JobEventMap,
 } from '../src/job.types'
 
 // Discriminated union with `type` field for pattern matching

@@ -12,6 +12,17 @@ import {
 } from './job.test-helpers'
 
 describe('Job', () => {
+  describe('Job Initialisation', () => {
+    test('rejects empty commands', async () => {
+      expect(
+        runJob({
+          name: 'Test Job',
+          commands: [],
+        }),
+      ).rejects.toThrow('At least one command is required')
+    })
+  })
+
   describe('Exited', () => {
     test('single command success', async () => {
       const { events } = await runJob({
