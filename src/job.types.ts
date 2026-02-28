@@ -9,9 +9,6 @@ export const JobDefinition = z.object({
       z.array(z.string()).min(1, 'At least one command argument is required'),
     )
     .min(1, 'At least one command is required'),
-  // This was shifted to be a responsability of the orchestrator
-  // TODO remove
-  // logsDir: z.string().nonempty({ message: 'logsDir is required' }),
 })
 export type JobDefinition = z.infer<typeof JobDefinition>
 
