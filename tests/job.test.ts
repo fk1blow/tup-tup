@@ -12,7 +12,7 @@ import {
 } from './job.test-helpers'
 
 describe('Job', () => {
-  describe('Job Initialisation', () => {
+  describe('Validation', () => {
     test('rejects empty commands', async () => {
       expect(
         runJob({
