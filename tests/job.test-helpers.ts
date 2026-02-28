@@ -1,11 +1,15 @@
-import { existsSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
-import path from 'node:path'
+import { EventEmitter } from 'node:events'
+import { Job } from '../src/job'
 import type {
   JobCommandResult,
   JobDefinition,
-  JobMessage,
+  JobEventMap,
 } from '../src/job.types'
+
+// Discriminated union with `type` field for pattern matching
+type TypedJobEvent = {
+  [K in keyof JobEventMap]: { type: K } & JobEventMap[K][0]
+}[keyof JobEventMap]
 
 // Command Result Helpers
 
@@ -26,12 +30,17 @@ export const failedToStartResult = (opts: {
 
 // Job Message Helpers
 
-export const jobStarted = (jobName: string): JobMessage => ({
+export const jobStarted = (
+  jobName: string,
+): Extract<TypedJobEvent, { type: 'job:started' }> => ({
   type: 'job:started',
   jobName,
 })
 
-export const jobFinished = (jobName: string, success: boolean): JobMessage => ({
+export const jobFinished = (
+  jobName: string,
+  success: boolean,
+): Extract<TypedJobEvent, { type: 'job:finished' }> => ({
   type: 'job:finished',
   jobName,
   success,
@@ -40,7 +49,7 @@ export const jobFinished = (jobName: string, success: boolean): JobMessage => ({
 export const commandStarted = (
   jobName: string,
   commandIndex: number,
-): JobMessage => ({
+): Extract<TypedJobEvent, { type: 'command:started' }> => ({
   type: 'command:started',
   jobName,
   commandIndex,
@@ -50,7 +59,7 @@ export const commandFinished = (
   jobName: string,
   commandIndex: number,
   result: JobCommandResult,
-): JobMessage => ({
+): Extract<TypedJobEvent, { type: 'command:finished' }> => ({
   type: 'command:finished',
   jobName,
   commandIndex,
@@ -59,52 +68,60 @@ export const commandFinished = (
 
 // Test Utilities
 
-export const findMessage = <T extends JobMessage['type']>(
-  messages: unknown[],
+export const findMessage = <T extends keyof JobEventMap>(
+  messages: TypedJobEvent[],
   type: T,
-): Extract<JobMessage, { type: T }> | undefined => {
+): Extract<TypedJobEvent, { type: T }> | undefined => {
   return messages.find(
-    (m): m is Extract<JobMessage, { type: T }> =>
-      typeof m === 'object' && m !== null && (m as JobMessage).type === type,
-  ) as Extract<JobMessage, { type: T }> | undefined
-}
-
-export const spawnJob = async (
-  job: JobDefinition,
-): Promise<{
-  process: Bun.Subprocess<'ignore', 'inherit', 'inherit'>
-  messages: unknown[]
-}> => {
-  const messages: unknown[] = []
-
-  const process = Bun.spawn(
-    ['bun', 'run', './src/job.ts', JSON.stringify(job)],
-    {
-      stdout: 'inherit',
-      stderr: 'inherit',
-      ipc: message => {
-        messages.push(message)
-      },
-    },
+    (m): m is Extract<TypedJobEvent, { type: T }> => m.type === type,
   )
-
-  await process.exited
-
-  return { process, messages }
 }
 
-export const getLogsDir = async (): Promise<{
-  targetDir: string
-  timestamp: string
+/**
+ * Runs a job with direct instantiation and returns collected events and logs.
+ */
+export const runJob = async (
+  definition: JobDefinition,
+): Promise<{
+  events: TypedJobEvent[]
+  logs: string[]
 }> => {
-  const timestamp = Date.now().toString()
+  const events: TypedJobEvent[] = []
+  const logs: string[] = []
 
-  const moduleDir = path.dirname(Bun.fileURLToPath(import.meta.url))
+  // Create a WritableStream that collects log lines
+  const decoder = new TextDecoder()
+  const logStream = new WritableStream<Uint8Array>({
+    write(chunk) {
+      const text = decoder.decode(chunk, { stream: true })
+      // Split by newlines and add non-empty lines
+      for (const line of text.split('\n')) {
+        if (line) {
+          logs.push(line)
+        }
+      }
+    },
+  })
 
-  const targetDir = path.join(moduleDir, 'test-logs', String(timestamp))
-  if (!existsSync(targetDir)) {
-    await mkdir(targetDir, { recursive: true })
-  }
+  const emitter = new EventEmitter<JobEventMap>()
 
-  return { targetDir, timestamp }
+  // Collect events as JobMessage objects
+  emitter.on('job:started', payload => {
+    events.push({ type: 'job:started', ...payload })
+  })
+  emitter.on('command:started', payload => {
+    events.push({ type: 'command:started', ...payload })
+  })
+  emitter.on('command:finished', payload => {
+    events.push({ type: 'command:finished', ...payload })
+  })
+  emitter.on('job:finished', async payload => {
+    events.push({ type: 'job:finished', ...payload })
+    await logStream.close()
+  })
+
+  const job = new Job(definition, emitter, logStream)
+  await job.run()
+
+  return { events, logs }
 }

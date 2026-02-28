@@ -1,39 +1,25 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { rmSync } from 'node:fs'
+import { describe, expect, test } from 'bun:test'
 import {
   commandFinished,
   commandStarted,
   exitedResult,
   failedToStartResult,
   findMessage,
-  getLogsDir,
   jobFinished,
   jobStarted,
   killedResult,
-  spawnJob,
+  runJob,
 } from './job.test-helpers'
 
 describe('Job', () => {
-  let logsDir: string
-
-  beforeAll(async () => {
-    const result = await getLogsDir()
-    logsDir = result.targetDir
-  })
-
-  afterAll(() => {
-    // rmSync(logsDir, { recursive: true })
-  })
-
   describe('Exited', () => {
     test('single command success', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [['echo', 'hello world']],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(0)),
@@ -42,17 +28,16 @@ describe('Job', () => {
     })
 
     test('multiple commands success', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [
           ['echo', 'hello world'],
           ['sleep', '0.1'],
           ['echo', 'goodbye'],
         ],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(0)),
@@ -65,13 +50,12 @@ describe('Job', () => {
     })
 
     test('non-zero exit code fails job', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'exit 1']],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(1)),
@@ -80,28 +64,26 @@ describe('Job', () => {
     })
 
     test('preserves custom exit code', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'exit 42']],
-        logsDir,
       })
 
-      const finishedMsg = findMessage(messages, 'command:finished')
+      const finishedMsg = findMessage(events, 'command:finished')
       expect(finishedMsg?.result).toEqual({ type: 'Exited', exitCode: 42 })
     })
 
     test('mid-sequence failure stops job', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [
           ['echo', 'hello'],
           ['sh', '-c', 'exit 1'],
           ['echo', 'never runs'],
         ],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(0)),
@@ -114,13 +96,12 @@ describe('Job', () => {
 
   describe('FailedToStart', () => {
     test('command not found', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [['nonexistent-command-xyz']],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished(
@@ -136,17 +117,16 @@ describe('Job', () => {
     })
 
     test('mid-sequence stops job', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [
           ['echo', 'hello'],
           ['nonexistent-command-xyz'],
           ['echo', 'never runs'],
         ],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(0)),
@@ -166,13 +146,12 @@ describe('Job', () => {
 
   describe('Killed', () => {
     test('command killed', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [['sh', '-c', 'kill -TERM $$']],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, killedResult('SIGTERM')),
@@ -181,17 +160,16 @@ describe('Job', () => {
     })
 
     test('mid-sequence stops job', async () => {
-      const { messages } = await spawnJob({
+      const { events } = await runJob({
         name: 'Test Job',
         commands: [
           ['echo', 'hello'],
           ['sh', '-c', 'kill -TERM $$'],
           ['echo', 'never runs'],
         ],
-        logsDir,
       })
 
-      expect(messages).toEqual([
+      expect(events).toEqual([
         jobStarted('Test Job'),
         commandStarted('Test Job', 0),
         commandFinished('Test Job', 0, exitedResult(0)),
@@ -209,22 +187,42 @@ describe('Job', () => {
     })
   })
 
-  describe.only('Job logging', async () => {
-    test('logs stdout and stderr correctly', async () => {
-      console.log('targetDir, timestamp:', logsDir)
-      // console.log('logsDir:', logsDir)
-
-      // const foo = Bun.file(path.join(logsDir, "foo.txt"))
-      // foo.write('This is stdout\n')
-
-      const { messages } = await spawnJob({
-        name: 'Test Job writing logs',
+  describe('Job logging', () => {
+    test('logs stdout correctly', async () => {
+      const { logs } = await runJob({
+        name: 'Test Job',
         commands: [
           ['echo', 'hello'],
           ['echo', 'world'],
         ],
-        logsDir: logsDir,
       })
+
+      expect(logs).toEqual(['hello', 'world'])
+    })
+
+    test('logs stderr correctly', async () => {
+      const { logs } = await runJob({
+        name: 'Test Job',
+        commands: [
+          ['sh', '-c', 'echo "error message" >&2'],
+          ['echo', 'hello after an error message'],
+        ],
+      })
+
+      expect(logs).toEqual(['error message', 'hello after an error message'])
+    })
+
+    test('logs stdout and stderr merged', async () => {
+      const { logs } = await runJob({
+        name: 'Test Job',
+        commands: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
+      })
+
+      // All output should be captured (order may vary due to stream merging)
+      expect(logs).toContain('out')
+      expect(logs).toContain('err')
+      expect(logs).toContain('out2')
+      expect(logs).toHaveLength(3)
     })
   })
 })

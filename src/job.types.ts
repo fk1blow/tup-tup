@@ -9,7 +9,9 @@ export const JobDefinition = z.object({
       z.array(z.string()).min(1, 'At least one command argument is required'),
     )
     .min(1, 'At least one command is required'),
-  logsDir: z.string().nonempty({ message: 'logsDir is required' }),
+  // This was shifted to be a responsability of the orchestrator
+  // TODO remove
+  // logsDir: z.string().nonempty({ message: 'logsDir is required' }),
 })
 export type JobDefinition = z.infer<typeof JobDefinition>
 
@@ -30,30 +32,45 @@ export const JobDefinitionJson = z
 
 export type JobDefinitionJson = z.infer<typeof JobDefinitionJson>
 
+/**
+ * Represents the result of executing a job command, including various failure modes and success.
+ *
+ * - `FailedToStart`: Indicates the command failed to start, with an optional error code and message.
+ * - `StreamError`: Represents an error that occurred while streaming or attaching a pipe to stdout or stderr
+ * - `Exited`: Indicates the command exited normally with a specific exit code.
+ * - `Killed`: Represents the command being killed by a signal, including the signal name.
+ */
 export type JobCommandResult =
   | { type: 'FailedToStart'; code?: string; message: string }
   | { type: 'StreamError'; stdout?: string; stderr?: string }
   | { type: 'Exited'; exitCode: number }
   | { type: 'Killed'; signal: NodeJS.Signals }
 
-export type JobMessage =
-  | {
-      type: 'job:started'
-      jobName: string
-    }
-  | {
-      type: 'command:started'
-      jobName: string
-      commandIndex: number
-    }
-  | {
-      type: 'command:finished'
-      jobName: string
-      commandIndex: number
-      result: JobCommandResult
-    }
-  | {
-      type: 'job:finished'
-      jobName: string
-      success: boolean
-    }
+export type JobStartedEvent = { jobName: string }
+export type JobCommandStartedEvent = { jobName: string; commandIndex: number }
+export type JobCommandFinishedEvent = {
+  jobName: string
+  commandIndex: number
+  result: JobCommandResult
+}
+export type JobFinishedEvent = { jobName: string; success: boolean }
+
+export type JobEvent =
+  | JobStartedEvent
+  | JobFinishedEvent
+  | JobCommandStartedEvent
+  | JobCommandFinishedEvent
+
+/**
+ * A mapping of job event types to their corresponding payloads.
+ *
+ * Example:
+ * `emitter.emit('command:started', { jobName: 'Test Job' })`
+ * `emitter.emit('job:finished', { jobName: 'Test Job', success: true })`
+ */
+export type JobEventMap = {
+  'job:started': [JobStartedEvent]
+  'command:started': [JobCommandStartedEvent]
+  'command:finished': [JobCommandFinishedEvent]
+  'job:finished': [JobFinishedEvent]
+}

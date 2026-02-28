@@ -1,111 +1,55 @@
+import mergeStreams from '@sindresorhus/merge-streams'
 import type { Subprocess } from 'bun'
-import { parseJobDefinition } from './cli'
-import type { JobCommandResult, JobDefinition } from './job.types'
+import type EventEmitter from 'events'
+import { Readable } from 'node:stream'
+import type { JobCommandResult, JobDefinition, JobEventMap } from './job.types'
 
 type JobSubprocess = Subprocess<'inherit', 'pipe', 'pipe'>
 
 export class Job {
-  private job: JobDefinition
+  // private job: JobDefinition
 
-  constructor() {
-    const jobDefinitionJson = process.argv.slice(2).at(0)
-
-    if (!jobDefinitionJson)
-      throw new Error(
-        'Cannot start Job: No job definition provided when spawned',
-      )
-
-    const jobDefinition = parseJobDefinition(jobDefinitionJson)
-    if (!jobDefinition)
-      throw new Error('Cannot start Job: No Job definition provided')
-
-    this.job = jobDefinition
-  }
+  constructor(
+    private job: JobDefinition,
+    private events: EventEmitter<JobEventMap>,
+    private logger: WritableStream<Uint8Array>,
+  ) {}
 
   async run() {
-    process.send?.({ type: 'job:started', jobName: this.job.name })
+    let jobSucceeded = true
+
+    this.events.emit('job:started', { jobName: this.job.name })
 
     for (const [commandIndex, command] of this.job.commands.entries()) {
-      process.send?.({
-        type: 'command:started',
+      this.events.emit('command:started', {
         jobName: this.job.name,
         commandIndex,
       })
 
       const result = await this.runCommand(command)
 
-      if (result.type === 'FailedToStart') {
-        process.send?.({
-          type: 'command:finished',
-          jobName: this.job.name,
-          commandIndex,
-          result,
-        })
+      this.events.emit('command:finished', {
+        jobName: this.job.name,
+        commandIndex,
+        result,
+      })
 
-        process.send?.({
-          type: 'job:finished',
-          jobName: this.job.name,
-          success: false,
-        })
+      // Check if command failed and bail out
+      const failed =
+        result.type === 'FailedToStart' ||
+        result.type === 'StreamError' ||
+        result.type === 'Killed' ||
+        (result.type === 'Exited' && result.exitCode !== 0)
 
-        // Bail out if the command failed to start
-        return
-      } else if (result.type === 'Exited') {
-        process.send?.({
-          type: 'command:finished',
-          jobName: this.job.name,
-          commandIndex,
-          result,
-        })
-
-        if (result.exitCode !== 0) {
-          process.send?.({
-            type: 'job:finished',
-            jobName: this.job.name,
-            success: false,
-          })
-          // Bail out if the command exited with a non-zero code
-          return
-        }
-      } else if (result.type === 'Killed') {
-        process.send?.({
-          type: 'command:finished',
-          jobName: this.job.name,
-          commandIndex,
-          result,
-        })
-
-        process.send?.({
-          type: 'job:finished',
-          jobName: this.job.name,
-          success: false,
-        })
-
-        // Bail out if the process was killed
-        return
-      } else if (result.type === 'StreamError') {
-        process.send?.({
-          type: 'command:finished',
-          jobName: this.job.name,
-          commandIndex,
-          result,
-        })
-
-        process.send?.({
-          type: 'job:finished',
-          jobName: this.job.name,
-          success: false,
-        })
-
-        // Bail out if there was a stream error
-        return
+      if (failed) {
+        jobSucceeded = false
+        break
       }
     }
 
-    process.send?.({
-      type: 'job:finished',
+    this.events.emit('job:finished', {
       jobName: this.job.name,
-      success: true,
+      success: jobSucceeded,
     })
   }
 
@@ -148,66 +92,23 @@ export class Job {
   }
 
   private async attachStreamHandlers(subprocess: JobSubprocess) {
-    // TODO move all this setup to a separate method or class
-    const logFile = Bun.file(
-      `${this.job.logsDir}/${this.job.name.replace(/\s+/g, '_')}.log`,
+    let pipeError: string | undefined
+
+    // Convert web streams to Node.js streams for merging
+    // See https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
+    const nodeStdout = Readable.fromWeb(subprocess.stdout)
+    const nodeStderr = Readable.fromWeb(subprocess.stderr)
+
+    // Merge the 2 streams and convert back to a web stream for piping to the output
+    const merged: ReadableStream<Uint8Array> = Readable.toWeb(
+      mergeStreams([nodeStdout, nodeStderr]),
     )
-    // TODO need to append to the log file instead of overwriting it
-    // see node's `createWriteStream("output.log", { flags: "a" })`
-    const logStream = logFile.writer()
-    const decoder = new TextDecoder()
 
-    const stdoutStream = new WritableStream({
-      write: chunk => {
-        logStream.write(`${decoder.decode(chunk)} \n`)
-        // console.log(
-        //   `[${this.job.name}] stdout: ${new TextDecoder().decode(chunk)}`,
-        // )
-      },
-      close: () => {
-        // console.log(`[${this.job.name}] stdout stream closed \n`)
-      },
-      abort: err => {
-        // console.error(`[${this.job.name}] stdout stream error:`, err)
-      },
-    })
-
-    const stderrStream = new WritableStream({
-      write: chunk => {
-        logStream.write(`${decoder.decode(chunk)} \n`)
-        // console.log(
-        //   `[${this.job.name}] stderr: ${new TextDecoder().decode(chunk)}`,
-        // )
-      },
-      close: () => {
-        // console.log(`[${this.job.name}] stderr stream closed \n`)
-      },
-      abort: err => {
-        // console.error(`[${this.job.name}] stderr stream error:`, err)
-      },
-    })
-
-    let stdoutPipeError: string | undefined
-    let stderrPipeError: string | undefined
-
-    const stdoutDone = subprocess.stdout.pipeTo(stdoutStream).catch(err => {
+    await merged.pipeTo(this.logger, { preventClose: true }).catch(err => {
       subprocess.kill()
-      stdoutPipeError = err instanceof Error ? err.message : String(err)
+      pipeError = err instanceof Error ? err.message : String(err)
     })
 
-    const stderrDone = subprocess.stderr.pipeTo(stderrStream).catch(err => {
-      subprocess.kill()
-      stderrPipeError = err instanceof Error ? err.message : String(err)
-    })
-
-    // TODO move this to a separate method or class
-    await Promise.all([stdoutDone, stderrDone]).finally(() => {
-      logStream.flush()
-      logStream.end()
-    })
-
-    return { stdoutPipeError, stderrPipeError }
+    return { stdoutPipeError: pipeError, stderrPipeError: undefined }
   }
 }
-
-await new Job().run()
