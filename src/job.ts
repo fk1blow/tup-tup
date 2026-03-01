@@ -98,6 +98,7 @@ export class Job {
   private async attachStreamHandlers(subprocess: JobSubprocess) {
     let pipeError: string | undefined
 
+    // TODO see the performance penalty of this conversion and consider alternatives if it's significant
     // Convert web streams to Node.js streams for merging
     // See https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
     const nodeStdout = Readable.fromWeb(subprocess.stdout)

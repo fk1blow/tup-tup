@@ -69,6 +69,6 @@ The happy path means everything went well, job started, ran its commands then fi
 
 ## TODO Remaining Tests to Write
 
-- Exited (exit code 0 and non-zero)
-- Killed (SIGTERM/SIGKILL)
-- StreamError (deferred — harder to simulate)
+- [x] Exited (exit code 0 and non-zero)
+- [x] Killed (SIGTERM/SIGKILL)
+- [x] StreamError (deferred — harder to simulate)

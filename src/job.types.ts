@@ -9,6 +9,7 @@ export const JobDefinition = z.object({
       z.array(z.string()).min(1, 'At least one command argument is required'),
     )
     .min(1, 'At least one command is required'),
+  image: z.string().min(1, 'Docker image name is required'),
 })
 export type JobDefinition = z.infer<typeof JobDefinition>
 
@@ -59,7 +60,8 @@ export type JobEvent =
   | JobCommandFinishedEvent
 
 /**
- * A mapping of job event types to their corresponding payloads.
+ * A mapping of job event types to their corresponding payloads
+ * used for strongly-typed event emission
  *
  * Example:
  * `emitter.emit('command:started', { jobName: 'Test Job' })`
