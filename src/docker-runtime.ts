@@ -52,7 +52,7 @@ export class DockerRuntime implements CommandRuntime {
       throw new Error('Container is not running')
     }
 
-    let subprocess: Subprocess<'inherit', 'pipe', 'pipe'> = Bun.spawn(
+    const subprocess: Subprocess<'inherit', 'pipe', 'pipe'> = Bun.spawn(
       ['docker', 'exec', this._id, ...cmd],
       {
         stdin: 'inherit',
