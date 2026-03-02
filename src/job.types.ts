@@ -30,19 +30,9 @@ export const JobDefinitionJson = z
 
 export type JobDefinitionJson = z.infer<typeof JobDefinitionJson>
 
-/**
- * Represents the result of executing a job command, including various failure modes and success.
- *
- * - `FailedToStart`: Indicates the command failed to start, with an optional error code and message.
- * - `StreamError`: Represents an error that occurred while streaming or attaching a pipe to stdout or stderr
- * - `Exited`: Indicates the command exited normally with a specific exit code.
- * - `Killed`: Represents the command being killed by a signal, including the signal name.
- */
-export type JobCommandResult =
-  | { type: 'FailedToStart'; code?: string; message: string }
-  | { type: 'StreamError'; stdout?: string; stderr?: string }
-  | { type: 'Exited'; exitCode: number }
-  | { type: 'Killed'; signal: NodeJS.Signals }
+export type JobCommandResult = {
+  exitCode: number
+}
 
 export type JobStartedEvent = { jobName: string }
 export type JobCommandStartedEvent = { jobName: string; commandIndex: number }

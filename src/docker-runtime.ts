@@ -1,0 +1,88 @@
+import type { Subprocess } from 'bun'
+import type { CommandRunnerResult } from './command-runner.types'
+import type { CommandRuntime } from './command-runtime.types'
+import type { JobDefinition } from './job.types'
+
+export class DockerRuntime implements CommandRuntime {
+  private _name: string
+  private _id: string | null = null
+
+  // TODO consider replacing the `JobDefinition` with a more specific type
+  // The DockerRuntime only needs the `image` field
+  constructor(private job: Omit<JobDefinition, 'commands'>) {
+    const jobName = job.name.replace(/\s+/g, '-').toLowerCase()
+    this._name = `tuptup-${jobName}-${Date.now()}`
+  }
+
+  get containerName() {
+    return this._name
+  }
+
+  get containerId() {
+    return this._id
+  }
+
+  async start() {
+    const dockerArgs = ['docker', 'run', '-d']
+    const nameArg = `--name=${this._name}`
+    const imageArg = this.job.image
+    const keepAliveArgs = ['tail', '-f', '/dev/null']
+
+    const subprocess = Bun.spawn(
+      [...dockerArgs, nameArg, imageArg, ...keepAliveArgs],
+      { stdout: 'pipe', stderr: 'pipe' },
+    )
+
+    const stdoutText = await new Response(subprocess.stdout).text()
+    const stderrText = await new Response(subprocess.stderr).text()
+
+    if (stdoutText.trim()) {
+      this._id = stdoutText.trim()
+    }
+
+    const exitCode = await subprocess.exited
+
+    if (exitCode !== 0) {
+      throw new Error(stderrText || `Docker failed with exit code ${exitCode}`)
+    }
+  }
+
+  async exec(cmd: string[]): Promise<CommandRunnerResult> {
+    if (!this._id) {
+      throw new Error('Container is not running')
+    }
+
+    let subprocess: Subprocess<'inherit', 'pipe', 'pipe'> = Bun.spawn(
+      ['docker', 'exec', this._id, ...cmd],
+      {
+        stdin: 'inherit',
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
+    )
+
+    const { exited, stdout, stderr } = subprocess
+
+    return {
+      exited,
+      stdout,
+      stderr,
+    }
+  }
+
+  async stop() {
+    if (!this._id) return
+
+    const subprocess = Bun.spawn(['docker', 'rm', '-f', this._id], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+
+    this._id = null
+
+    // TODO could be useful to log this error output somewhere instead of just swallowing it
+    // const _errorOutput = await new Response(subprocess.stderr).text()
+
+    await subprocess.exited
+  }
+}

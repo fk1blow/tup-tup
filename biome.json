@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
   "assist": {
     "enabled": true,
     "actions": {
@@ -34,15 +34,6 @@
     }
   },
   "files": {
-    "includes": [
-      "src/**/*.{ts,tsx,js,jsx}",
-      "playground/**/*.{ts,tsx,js,jsx}",
-      "tests/**/*.{ts,tsx,js,jsx}",
-      "src/**/*.json",
-      "*.ts",
-      "biome.json",
-      "package.json",
-      "tsconfig.json"
-    ]
+    "includes": ["**/*.{ts,tsx,js,jsx,json}"]
   }
 }

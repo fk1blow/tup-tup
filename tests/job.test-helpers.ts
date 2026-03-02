@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { DockerRuntime } from '../src/docker-runtime'
 import { Job } from '../src/job'
 import {
   JobDefinition,
@@ -10,23 +11,6 @@ import {
 type TypedJobEvent = {
   [K in keyof JobEventMap]: { type: K } & JobEventMap[K][0]
 }[keyof JobEventMap]
-
-// Command Result Helpers
-
-export const exitedResult = (exitCode = 0): JobCommandResult => ({
-  type: 'Exited',
-  exitCode,
-})
-
-export const killedResult = (signal: NodeJS.Signals): JobCommandResult => ({
-  type: 'Killed',
-  signal,
-})
-
-export const failedToStartResult = (opts: {
-  code: string
-  message: string
-}): JobCommandResult => ({ type: 'FailedToStart', ...opts })
 
 // Job Message Helpers
 
@@ -120,8 +104,18 @@ export const runJob = async (
     await logStream.close()
   })
 
-  const job = new Job(definition, emitter, logStream)
-  await job.run()
+  const runner = new DockerRuntime({
+    name: 'Test Job',
+    image: 'node:alpine',
+  })
+
+  await runner.start()
+  try {
+    const job = new Job(definition, emitter, logStream, runner)
+    await job.run()
+  } finally {
+    await runner.stop()
+  }
 
   return { events, logs }
 }
