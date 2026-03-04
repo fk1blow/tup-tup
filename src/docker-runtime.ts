@@ -1,17 +1,16 @@
 import type { Subprocess } from 'bun'
-import type { CommandRunnerResult } from './command-runner.types'
-import type { CommandRuntime } from './command-runtime.types'
 import type { JobDefinition } from './job.types'
+import type { Runner, RunnerExecResult } from './runner'
+import type { Runtime } from './runtime'
 
-export class DockerRuntime implements CommandRuntime {
+export class DockerRuntime implements Runtime, Runner {
+  private _image: string
   private _name: string
   private _id: string | null = null
 
-  // TODO consider replacing the `JobDefinition` with a more specific type
-  // The DockerRuntime only needs the `image` field
-  constructor(private job: Omit<JobDefinition, 'commands'>) {
-    const jobName = job.name.replace(/\s+/g, '-').toLowerCase()
-    this._name = `tuptup-${jobName}-${Date.now()}`
+  constructor({ image, name }: { image: string; name: string }) {
+    this._image = image
+    this._name = `tuptup-${name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
   }
 
   get containerName() {
@@ -25,7 +24,7 @@ export class DockerRuntime implements CommandRuntime {
   async start() {
     const dockerArgs = ['docker', 'run', '-d']
     const nameArg = `--name=${this._name}`
-    const imageArg = this.job.image
+    const imageArg = this._image
     const keepAliveArgs = ['tail', '-f', '/dev/null']
 
     const subprocess = Bun.spawn(
@@ -47,7 +46,7 @@ export class DockerRuntime implements CommandRuntime {
     }
   }
 
-  async exec(cmd: string[]): Promise<CommandRunnerResult> {
+  async exec(cmd: string[]): Promise<RunnerExecResult> {
     if (!this._id) {
       throw new Error('Container is not running')
     }

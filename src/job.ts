@@ -1,18 +1,18 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import type EventEmitter from 'node:events'
 import { Readable } from 'node:stream'
-import type { CommandRunner, CommandRunnerResult } from './command-runner.types'
 import type { JobCommandResult, JobDefinition, JobEventMap } from './job.types'
 import { JobDefinition as JobDefinitionParser } from './job.types'
+import type { Runner, RunnerExecResult } from './runner'
 
 export class Job {
   constructor(
-    private job: JobDefinition,
+    private definition: JobDefinition,
     private events: EventEmitter<JobEventMap>,
     private logger: WritableStream<Uint8Array>,
-    private runner: CommandRunner,
+    private runner: Runner,
   ) {
-    const { success, error } = JobDefinitionParser.safeParse(job)
+    const { success, error } = JobDefinitionParser.safeParse(definition)
     if (!success) {
       throw new Error(`Invalid job definition: ${error.message}`)
     }
@@ -21,18 +21,18 @@ export class Job {
   async run() {
     let jobSucceeded = true
 
-    this.events.emit('job:started', { jobName: this.job.name })
+    this.events.emit('job:started', { jobName: this.definition.name })
 
-    for (const [commandIndex, command] of this.job.commands.entries()) {
+    for (const [commandIndex, command] of this.definition.commands.entries()) {
       this.events.emit('command:started', {
-        jobName: this.job.name,
+        jobName: this.definition.name,
         commandIndex,
       })
 
       const runCommandResult = await this.runCommand(command)
 
       this.events.emit('command:finished', {
-        jobName: this.job.name,
+        jobName: this.definition.name,
         commandIndex,
         result: runCommandResult,
       })
@@ -44,7 +44,7 @@ export class Job {
     }
 
     this.events.emit('job:finished', {
-      jobName: this.job.name,
+      jobName: this.definition.name,
       success: jobSucceeded,
     })
   }
@@ -67,7 +67,7 @@ export class Job {
   private async pipeToLogging({
     stdout,
     stderr,
-  }: Pick<CommandRunnerResult, 'stdout' | 'stderr'>) {
+  }: Pick<RunnerExecResult, 'stdout' | 'stderr'>) {
     // TODO see the performance penalty of this conversion and consider alternatives if it's significant
     // Convert web streams to Node.js streams for merging
     // See https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream

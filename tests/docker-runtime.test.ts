@@ -1,9 +1,9 @@
 import { describe, expect, it, spyOn } from 'bun:test'
+import { DockerRuntime } from '../src/docker-runtime'
 import {
   filterRunningContainers,
   removeContainerByName,
-} from '../src/container.test-helpers'
-import { DockerRuntime } from '../src/docker-runtime'
+} from './container.test-helpers'
 
 const containerNamePattern = /^tuptup-[\w-]+-\d+$/
 const containerIdPattern = /^[0-9a-f]{12,64}$/
