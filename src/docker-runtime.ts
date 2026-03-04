@@ -1,5 +1,4 @@
 import type { Subprocess } from 'bun'
-import type { JobDefinition } from './job.types'
 import type { Runner, RunnerExecResult } from './runner'
 import type { Runtime } from './runtime'
 

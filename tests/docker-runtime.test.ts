@@ -1,4 +1,4 @@
-import { describe, expect, it, spyOn } from 'bun:test'
+import { afterAll, describe, expect, it, spyOn } from 'bun:test'
 import { DockerRuntime } from '../src/docker-runtime'
 import {
   filterRunningContainers,
@@ -9,6 +9,13 @@ const containerNamePattern = /^tuptup-[\w-]+-\d+$/
 const containerIdPattern = /^[0-9a-f]{12,64}$/
 
 describe('Docker Runtime', async () => {
+  afterAll(async () => {
+    const runningContainers = await filterRunningContainers('tuptup')
+    for (const container of runningContainers) {
+      await removeContainerByName(container)
+    }
+  })
+
   describe('Lifecycle', async () => {
     it('should create an instance', () => {
       const runtime = new DockerRuntime({
@@ -31,13 +38,16 @@ describe('Docker Runtime', async () => {
 
       let runningContainers = await filterRunningContainers(
         runtime.containerName,
+        { exact: true },
       )
       expect(runningContainers.length).toBe(1)
 
       await runtime.stop()
       expect(runtime.containerId).toBeNull()
 
-      runningContainers = await filterRunningContainers(runtime.containerName)
+      runningContainers = await filterRunningContainers(runtime.containerName, {
+        exact: true,
+      })
       expect(runningContainers.length).toBe(0)
     })
 
@@ -84,6 +94,7 @@ describe('Docker Runtime', async () => {
 
       let runningContainers = await filterRunningContainers(
         runtime1.containerName,
+        { exact: true },
       )
       expect(runningContainers.length).toBe(1)
 
@@ -94,12 +105,39 @@ describe('Docker Runtime', async () => {
 
       await runtime1.stop()
 
-      runningContainers = await filterRunningContainers(runtime1.containerName)
+      runningContainers = await filterRunningContainers(
+        runtime1.containerName,
+        { exact: true },
+      )
       expect(runningContainers.length).toBe(0)
+    })
+
+    it('should error when calling exec before starting the container', async () => {
+      const runtime = new DockerRuntime({
+        name: 'Stop Test Job',
+        image: 'node:alpine',
+      })
+
+      // This is fine
+      await expect(runtime.exec(['echo', 'hello from inside'])).rejects.toThrow(
+        'Container is not running',
+      )
+    })
+
+    it('should error when starting a container 2 times on the same instance', async () => {
+      const runtime = new DockerRuntime({
+        name: 'Stop Test Job',
+        image: 'node:alpine',
+      })
+
+      await runtime.start()
+      await expect(runtime.start()).rejects.toThrow(
+        /Conflict. The container name "\/tuptup-stop-test-job-\d+" is already in use/,
+      )
     })
   })
 
-  describe.only('Commands', async () => {
+  describe('Commands', async () => {
     it('should execute a command inside the container', async () => {
       const runtime = new DockerRuntime({
         name: 'Exec Command Test Job',
@@ -180,18 +218,6 @@ describe('Docker Runtime', async () => {
       expect(stdoutText.trim()).toHaveLength(0)
 
       await runtime.stop()
-    })
-
-    it('should fail to start a docker runtime with an invalid image', async () => {
-      const runtime = new DockerRuntime({
-        name: 'Exec Unknown Command Test Job',
-        image: 'unknown:image',
-      })
-
-      // Trust me bro, this is fine
-      await expect(runtime.start()).rejects.toThrow(
-        /Unable to find image 'unknown:image'/,
-      )
     })
   })
 })

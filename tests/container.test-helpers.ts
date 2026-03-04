@@ -1,4 +1,7 @@
-export async function filterRunningContainers(name: string): Promise<string[]> {
+export async function filterRunningContainers(
+  name: string,
+  opts: { exact: boolean } = { exact: false },
+): Promise<string[]> {
   const subprocess = Bun.spawn(
     [
       'docker',
@@ -16,7 +19,9 @@ export async function filterRunningContainers(name: string): Promise<string[]> {
   const containerNames = output
     .trim()
     .split('\n')
-    .filter(containerName => containerName === name)
+    .filter(containerName =>
+      opts.exact ? containerName === name : containerName.includes(name),
+    )
 
   return containerNames
 }
