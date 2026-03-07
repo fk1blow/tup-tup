@@ -11,6 +11,7 @@ export const JobDefinition = z.object({
     .min(1, 'At least one command is required'),
   image: z.string().min(1, 'Docker image name is required'),
 })
+
 export type JobDefinition = z.infer<typeof JobDefinition>
 
 export const JobDefinitionJson = z
