@@ -1,8 +1,8 @@
 import type { Subprocess } from 'bun'
+import type { Executor } from './executor'
 import type { Runner, RunnerExecResult } from './runner'
-import type { Runtime } from './runtime'
 
-export class DockerRuntime implements Runtime, Runner {
+export class DockerExecutor implements Executor, Runner {
   private _image: string
   private _name: string
   private _id: string | null = null
@@ -21,13 +21,13 @@ export class DockerRuntime implements Runtime, Runner {
   }
 
   async start() {
-    const dockerArgs = ['docker', 'run', '-d']
+    const runArgs = ['docker', 'run', '-d']
     const nameArg = `--name=${this._name}`
     const imageArg = this._image
     const keepAliveArgs = ['tail', '-f', '/dev/null']
 
     const subprocess = Bun.spawn(
-      [...dockerArgs, nameArg, imageArg, ...keepAliveArgs],
+      [...runArgs, nameArg, imageArg, ...keepAliveArgs],
       { stdout: 'pipe', stderr: 'pipe' },
     )
 

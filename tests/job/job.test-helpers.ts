@@ -1,11 +1,11 @@
 import { EventEmitter } from 'node:events'
-import { DockerRuntime } from '../src/docker-runtime'
-import { Job } from '../src/job'
+import { DockerExecutor } from '../../src/docker-executor'
+import { Job } from '../../src/job'
 import {
   JobDefinition,
   type JobCommandResult,
   type JobEventMap,
-} from '../src/job.types'
+} from '../../src/job.types'
 
 // Discriminated union with `type` field for pattern matching
 type TypedJobEvent = {
@@ -104,7 +104,7 @@ export const runJob = async (
     await logStream.close()
   })
 
-  const runner = new DockerRuntime({
+  const runner = new DockerExecutor({
     name: 'Test Job',
     image: 'node:alpine',
   })

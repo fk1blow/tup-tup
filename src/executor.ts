@@ -1,4 +1,4 @@
-export interface Runtime {
+export interface Executor {
   start: () => Promise<void>
   stop: () => Promise<void>
 }
