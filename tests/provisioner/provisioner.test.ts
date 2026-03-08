@@ -1,20 +1,14 @@
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'bun:test'
-import { mkdirSync, rmSync, statSync } from 'fs'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { statSync } from 'fs'
 import path from 'path'
 import { Provisioner } from '../../src/provisioner'
+import { setupWorkspace, teardownWorkspace } from '../workspace.test-helpers'
 
 describe('Provisioner', async () => {
   let workspacePath: string
 
   beforeEach(() => {
-    workspacePath = setupWorkspace()
+    workspacePath = setupWorkspace('./tests/provisioner')
   })
 
   afterEach(() => {
@@ -131,26 +125,3 @@ describe('Provisioner', async () => {
     })
   })
 })
-
-function setupWorkspace() {
-  // This is the path to the workspace directory that the provisioner will use to prepare the environment.
-  // In a real scenario, this would be provided by the environment in which the
-  // provisioner is running (e.g., a CI/CD pipeline), but for testing purposes, we can define it here.
-
-  // Need to create a unique workspace directory for each test to ensure isolation and avoid conflicts between tests.
-  const workspacePath = path.resolve(
-    path.join('./tests/provisioner', `./workspace-${crypto.randomUUID()}`),
-  )
-
-  mkdirSync(workspacePath, { recursive: true })
-
-  return workspacePath
-}
-
-function teardownWorkspace(workspacePath: string) {
-  try {
-    rmSync(workspacePath, { recursive: true, force: true })
-  } catch (err) {
-    console.error(`Error cleaning up workspace: ${err}`)
-  }
-}
