@@ -9,10 +9,10 @@ export class Provisioner {
   private _workspace: string
   private _pipelineConfig: PipelineDefinition | null = null
 
-  constructor(config: { repoUrl: string; workspace: string; branch?: string }) {
-    this._repoUrl = config.repoUrl
-    this._branch = config.branch
-    this._workspace = config.workspace
+  constructor(opts: { repoUrl: string; workspace: string; branch?: string }) {
+    this._repoUrl = opts.repoUrl
+    this._branch = opts.branch
+    this._workspace = opts.workspace
   }
 
   get repoUrl() {
