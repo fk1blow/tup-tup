@@ -27,7 +27,7 @@ describe('Provisioner', async () => {
 
       await p.prepare()
 
-      expect(statSync(path.join(workspacePath, '/repo')).isDirectory()).toBe(
+      expect(statSync(path.join(workspacePath, '/app')).isDirectory()).toBe(
         true,
       )
       expect(
@@ -39,7 +39,7 @@ describe('Provisioner', async () => {
       )
     })
 
-    it('should clone the provided repot into the workspace', async () => {
+    it('should clone the provided repo into the workspace', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         workspacePath: workspacePath,
@@ -48,26 +48,26 @@ describe('Provisioner', async () => {
       await p.prepare()
 
       expect(
-        statSync(path.join(workspacePath, '/repo/.git')).isDirectory(),
+        statSync(path.join(workspacePath, '/app/.git')).isDirectory(),
       ).toBe(true)
 
       expect(
-        statSync(path.join(workspacePath, '/repo/.tuptup.yml')).isFile(),
+        statSync(path.join(workspacePath, '/app/.tuptup.yml')).isFile(),
       ).toBe(true)
 
-      expect(
-        statSync(path.join(workspacePath, '/repo/index.ts')).isFile(),
-      ).toBe(true)
+      expect(statSync(path.join(workspacePath, '/app/index.ts')).isFile()).toBe(
+        true,
+      )
 
       expect(
-        statSync(path.join(workspacePath, '/repo/README.md')).isFile(),
+        statSync(path.join(workspacePath, '/app/README.md')).isFile(),
       ).toBe(true)
     })
 
     it('should parse the pipeline config', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        workspacePath: workspacePath,
+        workspacePath,
       })
 
       const pipelineContext = await p.prepare()

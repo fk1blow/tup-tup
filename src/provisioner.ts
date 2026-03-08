@@ -49,15 +49,15 @@ export class Provisioner {
   }
 
   private async prepareWorkspace() {
-    const repoPath = path.join(this._workspacePath, 'repo')
+    const appPath = path.join(this._workspacePath, 'app')
     const artifactsPath = path.join(this._workspacePath, 'artifacts')
     const logsPath = path.join(this._workspacePath, 'logs')
 
     try {
-      mkdirSync(repoPath)
+      mkdirSync(appPath)
     } catch (err) {
       throw new Error(
-        `Provisioner: Error while attempting to create repo directory at ${repoPath}: ${err}`,
+        `Provisioner: Error while attempting to create repo directory at ${appPath}: ${err}`,
       )
     }
 
@@ -81,12 +81,12 @@ export class Provisioner {
       ...this._pipelineContext,
       artifactsPath,
       logsPath,
-      repoPath,
+      appPath,
     }
   }
 
   private async parseConfig() {
-    const configPath = path.join(this._workspacePath, 'repo', '.tuptup.yml')
+    const configPath = path.join(this._workspacePath, 'app', '.tuptup.yml')
 
     try {
       statSync(configPath)
@@ -124,7 +124,7 @@ export class Provisioner {
     if (this._branch) {
       args.push('--branch', this._branch)
     }
-    args.push(this._repoUrl, path.join(this._workspacePath, 'repo'))
+    args.push(this._repoUrl, path.join(this._workspacePath, 'app'))
 
     const subprocess = Bun.spawn(args, {
       stdout: 'ignore',
