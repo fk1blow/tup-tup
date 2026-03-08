@@ -1,16 +1,16 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import type EventEmitter from 'node:events'
 import { Readable } from 'node:stream'
+import type { ExecResult, Executor } from './executor'
 import type { JobCommandResult, JobDefinition, JobEventMap } from './job.types'
 import { JobDefinition as JobDefinitionParser } from './job.types'
-import type { Runner, RunnerExecResult } from './runner'
 
 export class Job {
   constructor(
     private definition: JobDefinition,
     private events: EventEmitter<JobEventMap>,
     private logger: WritableStream<Uint8Array>,
-    private runner: Runner,
+    private executor: Executor,
   ) {
     const { success, error } = JobDefinitionParser.safeParse(definition)
     if (!success) {
@@ -50,7 +50,7 @@ export class Job {
   }
 
   private async runCommand(cmd: string[]): Promise<JobCommandResult> {
-    const execResult = await this.runner.exec(cmd)
+    const execResult = await this.executor.exec(cmd)
 
     await this.pipeToLogging({
       stdout: execResult.stdout,
@@ -67,7 +67,7 @@ export class Job {
   private async pipeToLogging({
     stdout,
     stderr,
-  }: Pick<RunnerExecResult, 'stdout' | 'stderr'>) {
+  }: Pick<ExecResult, 'stdout' | 'stderr'>) {
     // TODO see the performance penalty of this conversion and consider alternatives if it's significant
     // Convert web streams to Node.js streams for merging
     // See https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream

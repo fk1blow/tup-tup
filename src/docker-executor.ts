@@ -1,8 +1,8 @@
 import type { Subprocess } from 'bun'
-import type { Executor } from './executor'
-import type { Runner, RunnerExecResult } from './runner'
+import type { ExecResult, Executor } from './executor'
+import type { Lifecycle } from './lifecycle'
 
-export class DockerExecutor implements Executor, Runner {
+export class DockerExecutor implements Executor, Lifecycle {
   private _image: string
   private _name: string
   private _id: string | null = null
@@ -45,7 +45,7 @@ export class DockerExecutor implements Executor, Runner {
     }
   }
 
-  async exec(cmd: string[]): Promise<RunnerExecResult> {
+  async exec(cmd: string[]): Promise<ExecResult> {
     if (!this._id) {
       throw new Error('Container is not running')
     }

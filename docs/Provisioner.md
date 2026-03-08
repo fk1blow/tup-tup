@@ -10,10 +10,15 @@ Derives all paths (workspace, repo, artifacts)
 Produces a fully populated PipelineContext — no partial state leaks into Workflow.
 May have additional sub-responsibilities discovered during implementation.
 
+## Using docker to clone
+
+I suppose that theres no real benefit in using docker at this level, theres no
+real benefit in isolating just for the sake of doing it. Isolating it from what?
+
 ## TODO
 
 - [x] clone the repo
 - [x] finds and parse the pipeline config
 - [ ] create the `./artifacts` directory
 - [ ] add more tests
-- [ ] product teh PipelineContext(or ProvisionContext)
+- [ ] produce the PipelineContext(or ProvisionContext)
