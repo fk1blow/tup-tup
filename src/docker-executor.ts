@@ -2,7 +2,7 @@ import type { Subprocess } from 'bun'
 import type { ExecResult, Executor } from './executor'
 import type { Lifecycle } from './lifecycle'
 
-export class DockerExecutor implements Executor, Lifecycle {
+export class DockerExecutor implements Executor {
   private _image: string
   private _name: string
   private _id: string | null = null
@@ -20,14 +20,20 @@ export class DockerExecutor implements Executor, Lifecycle {
     return this._id
   }
 
-  async start() {
+  async start(workspacePath: string) {
     const runArgs = ['docker', 'run', '-d']
+    const workingDirArgs = [
+      '-v',
+      `${workspacePath}:/workspace`,
+      '-w',
+      '/workspace/app',
+    ]
     const nameArg = `--name=${this._name}`
     const imageArg = this._image
     const keepAliveArgs = ['tail', '-f', '/dev/null']
 
     const subprocess = Bun.spawn(
-      [...runArgs, nameArg, imageArg, ...keepAliveArgs],
+      [...runArgs, ...workingDirArgs, nameArg, imageArg, ...keepAliveArgs],
       { stdout: 'pipe', stderr: 'pipe' },
     )
 
