@@ -15,7 +15,7 @@ describe('Runner', async () => {
   })
 
   afterEach(() => {
-    // teardownWorkspaceIn(workspacePath)
+    teardownWorkspaceIn(workspacePath)
   })
 
   describe('Provisioning', () => {
@@ -34,6 +34,12 @@ describe('Runner', async () => {
       expect(
         statSync(path.join(workspacePath, 'logs/build.log')).isFile(),
       ).toBe(true)
+
+      expect(statSync(path.join(workspacePath, 'logs/test.log')).isFile())
+
+      const testLogContent = Bun.file(path.join(workspacePath, 'logs/test.log'))
+      expect(testLogContent.text()).resolves.toContain('tests/hello.test.ts:')
+      expect(testLogContent.text()).resolves.toMatch(/Ran 1 test across 1 file/)
 
       // expect(
       //   statSync(path.join(workspacePath, '/artifacts')).isDirectory(),
