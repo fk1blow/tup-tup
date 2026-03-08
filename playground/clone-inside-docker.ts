@@ -6,7 +6,7 @@ const _subprocess = Bun.spawn(
     '-v',
     `host-workspace-path:/workspace`,
     '-w',
-    '/workspace',
+    '/workspace/app',
     'alpine/git',
     'clone',
     'https://github.com/fk1blow/tup-tup-demo-repo',
