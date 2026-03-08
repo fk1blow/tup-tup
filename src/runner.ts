@@ -1,6 +1,7 @@
 import EventEmitter from 'node:events'
 import type { JobEventMap } from './job.types'
 import { Provisioner } from './provisioner'
+import { Workflow } from './workflow'
 
 export class Runner {
   // This might also need the path supplied by the system where tuptup is running,
@@ -30,6 +31,8 @@ export class Runner {
       workspacePath: this._workspace,
     })
 
-    await provisioner.prepare()
+    const pipelineCtx = await provisioner.prepare()
+
+    const workflow = new Workflow(pipelineCtx)
   }
 }

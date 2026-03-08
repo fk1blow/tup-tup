@@ -66,13 +66,13 @@ describe('Provisioner', async () => {
         workspacePath: workspacePath,
       })
 
-      await p.prepare()
+      const pipelineContext = await p.prepare()
 
-      expect(p.pipelineConfig).not.toBeNull()
-      expect(p.pipelineConfig?.name).toBe('my-pipeline')
-      expect(p.pipelineConfig?.jobs).toHaveLength(2)
-      expect(p.pipelineConfig?.jobs[0]?.name).toBe('test')
-      expect(p.pipelineConfig?.jobs[1]?.name).toBe('build')
+      expect(pipelineContext).not.toBeNull()
+      expect(pipelineContext.definition?.name).toBe('my-pipeline')
+      expect(pipelineContext.definition?.jobs).toHaveLength(2)
+      expect(pipelineContext.definition?.jobs[0]?.name).toBe('test')
+      expect(pipelineContext.definition?.jobs[1]?.name).toBe('build')
     })
   })
 

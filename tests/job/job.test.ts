@@ -196,7 +196,7 @@ describe('Job', () => {
     })
   })
 
-  describe('StreamError', () => {
+  describe.skip('StreamError', () => {
     test.skip('deferred - hard to simulate', async () => {
       // StreamError requires forcing a pipe failure
       // See discussion: dependency injection or unit test approach

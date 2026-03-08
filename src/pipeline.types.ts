@@ -12,14 +12,10 @@ export const PipelineDefinition = z.object({
 
 export type PipelineDefinition = z.infer<typeof PipelineDefinition>
 
-export const PipelineContext = z.object({
-  repoUrl: z.string().nonempty({ message: 'Repository URL cannot be empty' }),
-  repoBranch: z.string().optional(),
-  pipeline: PipelineDefinition.required(),
-  workspacePath: z.string().nonempty({ message: 'Workspace cannot be empty' }),
-  artifactsPath: z
-    .string()
-    .nonempty({ message: 'Artifacts path cannot be empty' }),
-})
-
-export type PipelineContext = z.infer<typeof PipelineContext>
+export interface PipelineContext {
+  repoUrl: string
+  repoBranch?: string
+  definition: PipelineDefinition
+  workspacePath: string
+  artifactsPath: string
+}

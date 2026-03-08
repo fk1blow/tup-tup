@@ -1,13 +1,18 @@
 import { YAML } from 'bun'
 import { mkdirSync, statSync } from 'fs'
 import path from 'path'
-import { PipelineDefinition } from './pipeline.types'
+import { PipelineDefinition, type PipelineContext } from './pipeline.types'
+
+type IncompletePipelineContext = Omit<PipelineContext, 'definition'> & {
+  definition?: PipelineDefinition
+}
 
 export class Provisioner {
   private _repoUrl: string
   private _branch?: string
   private _workspacePath: string
-  private _pipelineConfig: PipelineDefinition | null = null
+  private _artifactsPath: string
+  private _pipelineContext: IncompletePipelineContext | PipelineContext
 
   constructor(opts: {
     repoUrl: string
@@ -17,6 +22,13 @@ export class Provisioner {
     this._repoUrl = opts.repoUrl
     this._branch = opts.branch
     this._workspacePath = opts.workspacePath
+    this._artifactsPath = path.join(opts.workspacePath, 'artifacts')
+    this._pipelineContext = {
+      repoUrl: this._repoUrl,
+      repoBranch: this._branch,
+      workspacePath: this._workspacePath,
+      artifactsPath: this._artifactsPath,
+    }
   }
 
   static create(
@@ -25,22 +37,13 @@ export class Provisioner {
     return new Provisioner(opts)
   }
 
-  get repoUrl() {
-    return this._repoUrl
-  }
-
-  get workDir() {
-    return this._workspacePath
-  }
-
-  get pipelineConfig() {
-    return this._pipelineConfig
-  }
-
   async prepare() {
     await this.prepareWorkspace()
     await this.cloneRepo()
     await this.parseConfig()
+    // We can safely cast the pipeline context to the complete version here
+    // If any of the steps above failed, an error would have been thrown
+    return this._pipelineContext as PipelineContext
   }
 
   private async prepareWorkspace() {
@@ -92,7 +95,10 @@ export class Provisioner {
         `Provisioner: Invalid pipeline configuration ${JSON.stringify(configValidation.error.issues)}`,
       )
 
-    this._pipelineConfig = configValidation.data
+    this._pipelineContext = {
+      ...this._pipelineContext,
+      definition: configValidation.data,
+    }
   }
 
   private async cloneRepo() {
