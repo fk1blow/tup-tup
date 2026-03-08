@@ -1,5 +1,17 @@
-import { afterAll, describe, expect, it, spyOn } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  spyOn,
+} from 'bun:test'
 import { DockerExecutor } from '../../src/docker-executor'
+import {
+  setupWorkspaceIn,
+  teardownWorkspaceIn,
+} from '../workspace.test-helpers'
 import {
   filterRunningContainers,
   removeContainerByName,
@@ -14,6 +26,16 @@ describe('Docker Executor', async () => {
     for (const container of runningContainers) {
       await removeContainerByName(container)
     }
+  })
+
+  let workspacePath: string
+
+  beforeEach(() => {
+    workspacePath = setupWorkspaceIn('./tests/runner')
+  })
+
+  afterEach(() => {
+    teardownWorkspaceIn(workspacePath)
   })
 
   describe('Lifecycle', async () => {
@@ -32,7 +54,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
       expect(runtime.containerName).toMatch(containerNamePattern)
       expect(runtime.containerId).toMatch(containerIdPattern)
 
@@ -57,7 +79,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
 
       await removeContainerByName(runtime.containerName)
       expect(runtime.stop()).resolves.toBeUndefined()
@@ -71,7 +93,7 @@ describe('Docker Executor', async () => {
       })
 
       // This is fine
-      await expect(runtime.start()).rejects.toThrow(
+      await expect(runtime.start(workspacePath)).rejects.toThrow(
         /Unable to find image 'nonexistent:image'/,
       )
     })
@@ -83,7 +105,7 @@ describe('Docker Executor', async () => {
         name: 'Duplicate Name Test Job',
         image: 'node:alpine',
       })
-      await runtime1.start()
+      await runtime1.start(workspacePath)
 
       const runtime2 = new DockerExecutor({
         name: 'Duplicate Name Test Job',
@@ -130,7 +152,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
       await expect(runtime.start()).rejects.toThrow(
         /Conflict. The container name "\/tuptup-stop-test-job-\d+" is already in use/,
       )
@@ -144,7 +166,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
 
       const { stdout, stderr } = await runtime.exec([
         'echo',
@@ -165,7 +187,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
 
       const commands = [
         ['echo', 'first command'],
@@ -190,7 +212,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
 
       const { stdout, exited } = await runtime.exec(['nonexistent-command-xyz'])
       const stdoutText = await new Response(stdout).text()
@@ -208,7 +230,7 @@ describe('Docker Executor', async () => {
         image: 'node:alpine',
       })
 
-      await runtime.start()
+      await runtime.start(workspacePath)
 
       const { stdout, exited } = await runtime.exec(['sh', '-c', 'exit 42'])
       const stdoutText = await new Response(stdout).text()
