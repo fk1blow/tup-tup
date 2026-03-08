@@ -26,7 +26,7 @@ export class Workflow {
     })
 
     // TODO try/catch around this
-    await executor.start()
+    await executor.start(this.pipelineContext.workspacePath)
 
     // hmmmm
     const logger = this.createFileLogger(jobDefinition.name)
@@ -37,7 +37,7 @@ export class Workflow {
 
     await executor.stop()
 
-    await logger.close()
+    await logger.getWriter().close()
   }
 
   private createFileLogger(jobName: string): WritableStream<Uint8Array> {

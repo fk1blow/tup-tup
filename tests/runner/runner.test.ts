@@ -27,9 +27,13 @@ describe('Runner', async () => {
 
       await runner.run()
 
-      // expect(
-      //   statSync(path.join(workspacePath, '/repo/.git')).isDirectory(),
-      // ).toBe(true)
+      expect(statSync(path.join(workspacePath, 'logs/test.log')).isFile()).toBe(
+        true,
+      )
+
+      expect(
+        statSync(path.join(workspacePath, 'logs/build.log')).isFile(),
+      ).toBe(true)
 
       // expect(
       //   statSync(path.join(workspacePath, '/artifacts')).isDirectory(),
