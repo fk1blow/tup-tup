@@ -104,17 +104,17 @@ export const runJob = async (
     await logStream.close()
   })
 
-  const runner = new DockerExecutor({
+  const executor = new DockerExecutor({
     name: 'Test Job',
     image: 'node:alpine',
   })
 
-  await runner.start()
+  await executor.start()
   try {
-    const job = new Job(definition, emitter, logStream, runner)
+    const job = new Job(definition, emitter, logStream, executor)
     await job.run()
   } finally {
-    await runner.stop()
+    await executor.stop()
   }
 
   return { events, logs }
