@@ -1,9 +1,13 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import type EventEmitter from 'node:events'
 import { Readable } from 'node:stream'
-import type { ExecResult, Executor } from './executor'
-import type { JobCommandResult, JobDefinition, JobEventMap } from './job.types'
-import { JobDefinition as JobDefinitionParser } from './job.types'
+import type { ExecResult, Executor } from '../src/executor'
+import type {
+  JobCommandResult,
+  JobDefinition,
+  JobEventMap,
+} from '../src/job.types'
+import { JobDefinition as JobDefinitionParser } from '../src/job.types'
 
 export class Job {
   constructor(
