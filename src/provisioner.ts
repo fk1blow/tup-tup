@@ -3,7 +3,10 @@ import { mkdirSync, statSync } from 'fs'
 import path from 'path'
 import { PipelineDefinition, type PipelineContext } from './pipeline.types'
 
-type IncompletePipelineContext = Omit<PipelineContext, 'definition'> & {
+type IncompletePipelineContext = Omit<
+  PipelineContext,
+  'definition' | 'artifactsPath' | 'logsPath' | 'repoPath'
+> & {
   definition?: PipelineDefinition
 }
 
@@ -11,7 +14,6 @@ export class Provisioner {
   private _repoUrl: string
   private _branch?: string
   private _workspacePath: string
-  private _artifactsPath: string
   private _pipelineContext: IncompletePipelineContext | PipelineContext
 
   constructor(opts: {
@@ -21,13 +23,13 @@ export class Provisioner {
   }) {
     this._repoUrl = opts.repoUrl
     this._branch = opts.branch
+
     this._workspacePath = opts.workspacePath
-    this._artifactsPath = path.join(opts.workspacePath, 'artifacts')
+
     this._pipelineContext = {
       repoUrl: this._repoUrl,
       repoBranch: this._branch,
       workspacePath: this._workspacePath,
-      artifactsPath: this._artifactsPath,
     }
   }
 
@@ -37,7 +39,7 @@ export class Provisioner {
     return new Provisioner(opts)
   }
 
-  async prepare() {
+  async prepare(): Promise<PipelineContext> {
     await this.prepareWorkspace()
     await this.cloneRepo()
     await this.parseConfig()
@@ -49,6 +51,7 @@ export class Provisioner {
   private async prepareWorkspace() {
     const repoPath = path.join(this._workspacePath, 'repo')
     const artifactsPath = path.join(this._workspacePath, 'artifacts')
+    const logsPath = path.join(this._workspacePath, 'logs')
 
     try {
       mkdirSync(repoPath)
@@ -64,6 +67,21 @@ export class Provisioner {
       throw new Error(
         `Provisioner: Error while attempting to create artifacts directory at ${artifactsPath}: ${err}`,
       )
+    }
+
+    try {
+      mkdirSync(logsPath)
+    } catch (err) {
+      throw new Error(
+        `Provisioner: Error while attempting to create logs directory at ${logsPath}: ${err}`,
+      )
+    }
+
+    this._pipelineContext = {
+      ...this._pipelineContext,
+      artifactsPath,
+      logsPath,
+      repoPath,
     }
   }
 

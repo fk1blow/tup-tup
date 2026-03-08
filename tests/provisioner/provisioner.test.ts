@@ -19,7 +19,7 @@ describe('Provisioner', async () => {
   })
 
   describe('Happy Path', () => {
-    it(`should prepare the /repo and /artifacts directories`, async () => {
+    it(`should prepare the workspace`, async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         workspacePath: workspacePath,
@@ -33,6 +33,10 @@ describe('Provisioner', async () => {
       expect(
         statSync(path.join(workspacePath, '/artifacts')).isDirectory(),
       ).toBe(true)
+
+      expect(statSync(path.join(workspacePath, '/logs')).isDirectory()).toBe(
+        true,
+      )
     })
 
     it('should clone the provided repot into the workspace', async () => {

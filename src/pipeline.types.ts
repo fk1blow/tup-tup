@@ -18,4 +18,7 @@ export interface PipelineContext {
   definition: PipelineDefinition
   workspacePath: string
   artifactsPath: string
+  logsPath: string
+  // hmm, don't like having both repoUrl and repoPath here, but it is what it is for now
+  repoPath: string
 }
