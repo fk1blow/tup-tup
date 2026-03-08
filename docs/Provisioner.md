@@ -19,7 +19,7 @@ real benefit in isolating just for the sake of doing it. Isolating it from what?
 
 - [x] create the `./artifacts`, `./repo` directories
 - [x] ~~clone the repo~~
-- [ ] clone the repo(without using docker)
+- [x] clone the repo(without using docker)
 - [x] finds and parse the pipeline config
-- [ ] add more tests
+- [x] add more tests
 - [ ] produce the PipelineContext(or ProvisionContext)

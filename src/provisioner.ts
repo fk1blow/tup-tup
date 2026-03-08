@@ -1,8 +1,7 @@
 import { YAML } from 'bun'
-import { log } from 'console'
-import { mkdir, mkdirSync, statSync } from 'fs'
+import { mkdirSync, statSync } from 'fs'
 import path from 'path'
-import { PipelineDefinition } from './pipeline.types'
+import { PipelineDefinition } from './pipeline'
 
 export class Provisioner {
   private _repoUrl: string
