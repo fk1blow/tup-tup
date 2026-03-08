@@ -1,21 +1,35 @@
-// This is another thing, way higher up on the abstraction
-// It should replace the Pipeline as the Top level abstraction
-//
-// Runner (top-level)
-// ├── Provisioner
-// ├── Workflow
-// │   ├── Executor (lifecycle)
-// │   └── Job (only exec)
-// └── Teardown
-//
-// Old/previous abstraction:
-//
-// export type RunnerExecResult = {
-//   stdout: ReadableStream<Uint8Array<ArrayBuffer>>
-//   stderr: ReadableStream<Uint8Array<ArrayBuffer>>
-//   exited: Promise<number>
-// }
+import EventEmitter from 'node:events'
+import type { JobEventMap } from './job.types'
+import { Provisioner } from './provisioner'
 
-// export interface Runner {
-//   exec: (cmd: string[]) => Promise<RunnerExecResult>
-// }
+export class Runner {
+  // This might also need the path supplied by the system where tuptup is running,
+  // so that it can be used to store the workspace.
+  // Might come from the .env file or from the CLI args
+  private _workspace: string
+  private _repoUrl: string
+  private _repoBranch?: string
+  private _emitter: EventEmitter
+
+  constructor(opts: {
+    repoUrl: string
+    repoBranch?: string
+    workspace: string
+  }) {
+    // this._workspace = `/tmp/tup-tup-runner-${Date.now()}`
+    this._workspace = opts.workspace
+    this._repoUrl = opts.repoUrl
+    this._repoBranch = opts.repoBranch
+    this._emitter = new EventEmitter<JobEventMap>()
+  }
+
+  async run() {
+    const provisioner = Provisioner.create({
+      repoUrl: this._repoUrl,
+      branch: this._repoBranch,
+      workspace: this._workspace,
+    })
+
+    await provisioner.prepare()
+  }
+}
