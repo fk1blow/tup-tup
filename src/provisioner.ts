@@ -15,6 +15,12 @@ export class Provisioner {
     this._workspace = opts.workspace
   }
 
+  static create(
+    opts: ConstructorParameters<typeof Provisioner>[0],
+  ): Provisioner {
+    return new Provisioner(opts)
+  }
+
   get repoUrl() {
     return this._repoUrl
   }
