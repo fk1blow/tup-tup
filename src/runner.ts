@@ -27,7 +27,7 @@ export class Runner {
     const provisioner = Provisioner.create({
       repoUrl: this._repoUrl,
       branch: this._repoBranch,
-      workspace: this._workspace,
+      workspacePath: this._workspace,
     })
 
     await provisioner.prepare()

@@ -1,18 +1,22 @@
 import { YAML } from 'bun'
 import { mkdirSync, statSync } from 'fs'
 import path from 'path'
-import { PipelineDefinition } from './pipeline'
+import { PipelineDefinition } from './pipeline.types'
 
 export class Provisioner {
   private _repoUrl: string
   private _branch?: string
-  private _workspace: string
+  private _workspacePath: string
   private _pipelineConfig: PipelineDefinition | null = null
 
-  constructor(opts: { repoUrl: string; workspace: string; branch?: string }) {
+  constructor(opts: {
+    repoUrl: string
+    workspacePath: string
+    branch?: string
+  }) {
     this._repoUrl = opts.repoUrl
     this._branch = opts.branch
-    this._workspace = opts.workspace
+    this._workspacePath = opts.workspacePath
   }
 
   static create(
@@ -26,7 +30,7 @@ export class Provisioner {
   }
 
   get workDir() {
-    return this._workspace
+    return this._workspacePath
   }
 
   get pipelineConfig() {
@@ -40,8 +44,8 @@ export class Provisioner {
   }
 
   private async prepareWorkspace() {
-    const repoPath = path.join(this._workspace, 'repo')
-    const artifactsPath = path.join(this._workspace, 'artifacts')
+    const repoPath = path.join(this._workspacePath, 'repo')
+    const artifactsPath = path.join(this._workspacePath, 'artifacts')
 
     try {
       mkdirSync(repoPath)
@@ -61,7 +65,7 @@ export class Provisioner {
   }
 
   private async parseConfig() {
-    const configPath = path.join(this._workspace, 'repo', '.tuptup.yml')
+    const configPath = path.join(this._workspacePath, 'repo', '.tuptup.yml')
 
     try {
       statSync(configPath)
@@ -96,7 +100,7 @@ export class Provisioner {
     if (this._branch) {
       args.push('--branch', this._branch)
     }
-    args.push(this._repoUrl, path.join(this._workspace, 'repo'))
+    args.push(this._repoUrl, path.join(this._workspacePath, 'repo'))
 
     const subprocess = Bun.spawn(args, {
       stdout: 'ignore',

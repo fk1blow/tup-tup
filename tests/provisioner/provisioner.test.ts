@@ -22,7 +22,7 @@ describe('Provisioner', async () => {
     it(`should prepare the /repo and /artifacts directories`, async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       await p.prepare()
@@ -38,7 +38,7 @@ describe('Provisioner', async () => {
     it('should clone the provided repot into the workspace', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       await p.prepare()
@@ -63,7 +63,7 @@ describe('Provisioner', async () => {
     it('should parse the pipeline config', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       await p.prepare()
@@ -80,7 +80,7 @@ describe('Provisioner', async () => {
     it('should throw an error if the repo cannot be cloned', async () => {
       const p = new Provisioner({
         repoUrl: 'xoxoxo',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       await expect(p.prepare()).rejects.toThrow(
@@ -92,7 +92,7 @@ describe('Provisioner', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         branch: 'test/missing-config',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       // Trust me bro
@@ -105,7 +105,7 @@ describe('Provisioner', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         branch: 'test/invalid-config-file',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       // Trust me bro
@@ -118,7 +118,7 @@ describe('Provisioner', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         branch: 'test/invalid-config',
-        workspace: workspacePath,
+        workspacePath: workspacePath,
       })
 
       // Trust me bro
