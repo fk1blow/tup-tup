@@ -10,7 +10,7 @@ export class Provisioner {
   private _workspace: string
   private _pipelineConfig: PipelineDefinition | null = null
 
-  constructor(config: { repoUrl: string; branch?: string; workspace: string }) {
+  constructor(config: { repoUrl: string; workspace: string; branch?: string }) {
     this._repoUrl = config.repoUrl
     this._branch = config.branch
     this._workspace = config.workspace
@@ -73,15 +73,15 @@ export class Provisioner {
       parsedFileContents = YAML.parse(fileContents)
     } catch (err) {
       throw new Error(
-        `Provisioner: Error parsing YAML config file at ${configPath}: ${err}`,
+        `Provisioner: Error parsing YML config file at ${configPath}: ${err}`,
       )
     }
 
     const configValidation = PipelineDefinition.safeParse(parsedFileContents)
     if (!configValidation.success)
-      throw new Error('Provisioner: Invalid pipeline configuration', {
-        cause: configValidation.error,
-      })
+      throw new Error(
+        `Provisioner: Invalid pipeline configuration ${JSON.stringify(configValidation.error.issues)}`,
+      )
 
     this._pipelineConfig = configValidation.data
   }

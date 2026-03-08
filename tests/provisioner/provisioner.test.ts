@@ -11,17 +11,17 @@ import path from 'path'
 import { Provisioner } from '../../src/provisioner'
 
 describe('Provisioner', async () => {
+  let workspacePath: string
+
+  beforeEach(() => {
+    workspacePath = setupWorkspace()
+  })
+
+  afterEach(() => {
+    teardownWorkspace(workspacePath)
+  })
+
   describe('Happy Path', () => {
-    let workspacePath: string
-
-    beforeEach(() => {
-      workspacePath = setupWorkspace()
-    })
-
-    afterEach(() => {
-      teardownWorkspace(workspacePath)
-    })
-
     it(`should prepare the /repo and /artifacts directories`, async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
@@ -80,16 +80,6 @@ describe('Provisioner', async () => {
   })
 
   describe('Error Handling', () => {
-    let workspacePath: string
-
-    beforeEach(() => {
-      workspacePath = setupWorkspace()
-    })
-
-    afterEach(() => {
-      teardownWorkspace(workspacePath)
-    })
-
     it('should throw an error if the repo cannot be cloned', async () => {
       const p = new Provisioner({
         repoUrl: 'xoxoxo',
@@ -114,7 +104,20 @@ describe('Provisioner', async () => {
       )
     })
 
-    it('should throw an error if the config file is invalid', async () => {
+    it('should throw an error if the config yml file cannot be parsed', async () => {
+      const p = new Provisioner({
+        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+        branch: 'test/invalid-config-file',
+        workspace: workspacePath,
+      })
+
+      // Trust me bro
+      await expect(p.prepare()).rejects.toThrow(
+        /Provisioner: Error parsing YML config file/,
+      )
+    })
+
+    it('should throw an error if the config is invalid', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         branch: 'test/invalid-config',
@@ -123,7 +126,7 @@ describe('Provisioner', async () => {
 
       // Trust me bro
       await expect(p.prepare()).rejects.toThrow(
-        /Provisioner: Error parsing YAML config file/,
+        /Provisioner: Invalid pipeline configuration/,
       )
     })
   })
