@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync } from 'fs'
 import path from 'path'
 
-export function setupWorkspace(workingDir: string) {
+export function setupWorkspaceIn(workingDir: string) {
   // This is the path to the workspace directory that the provisioner will use to prepare the environment.
   // In a real scenario, this would be provided by the environment in which the
   // provisioner is running (e.g., a CI/CD pipeline), but for testing purposes, we can define it here.
@@ -17,7 +17,7 @@ export function setupWorkspace(workingDir: string) {
   return workspacePath
 }
 
-export function teardownWorkspace(workspacePath: string) {
+export function teardownWorkspaceIn(workspacePath: string) {
   try {
     rmSync(workspacePath, { recursive: true, force: true })
   } catch (err) {

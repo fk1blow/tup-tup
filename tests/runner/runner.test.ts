@@ -2,17 +2,20 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { statSync } from 'fs'
 import path from 'path'
 import { Runner } from '../../src/runner'
-import { setupWorkspace, teardownWorkspace } from '../workspace.test-helpers'
+import {
+  setupWorkspaceIn,
+  teardownWorkspaceIn,
+} from '../workspace.test-helpers'
 
 describe('Runner', async () => {
   let workspacePath: string
 
   beforeEach(() => {
-    workspacePath = setupWorkspace('./tests/runner')
+    workspacePath = setupWorkspaceIn('./tests/runner')
   })
 
   afterEach(() => {
-    teardownWorkspace(workspacePath)
+    teardownWorkspaceIn(workspacePath)
   })
 
   describe('Provisioning', () => {
