@@ -22,4 +22,4 @@ real benefit in isolating just for the sake of doing it. Isolating it from what?
 - [x] clone the repo(without using docker)
 - [x] finds and parse the pipeline config
 - [x] add more tests
-- [ ] produce the PipelineContext(or ProvisionContext)
+- [x] produce the PipelineContext(or ProvisionContext)
