@@ -1,4 +1,16 @@
-import { describe, expect, test } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test'
+import {
+  filterRunningContainers,
+  removeContainerByName,
+} from '../test-helpers/executor.test-helpers'
 import {
   commandFinished,
   commandStarted,
@@ -6,28 +18,55 @@ import {
   jobFinished,
   jobStarted,
   runJob,
-} from './job.test-helpers'
+} from '../test-helpers/job.test-helpers'
+import {
+  setupWorkspaceIn,
+  teardownWorkspaceIn,
+} from '../workspace.test-helpers'
 
 describe('Job', () => {
+  afterAll(async () => {
+    const runningContainers = await filterRunningContainers('tuptup')
+    for (const container of runningContainers) {
+      await removeContainerByName(container)
+    }
+  })
+
+  let workspacePath: string
+
+  beforeEach(() => {
+    workspacePath = setupWorkspaceIn('./tests/runner')
+  })
+
+  afterEach(() => {
+    teardownWorkspaceIn(workspacePath)
+  })
+
   describe('Validation', () => {
     test('rejects empty commands', async () => {
       expect(
-        runJob({
-          name: 'Test Job',
-          commands: [],
-          image: 'node:alpine',
-        }),
+        runJob(
+          {
+            name: 'Test Job',
+            commands: [],
+            image: 'node:alpine',
+          },
+          workspacePath,
+        ),
       ).rejects.toThrow('At least one command is required')
     })
   })
 
   describe('Exited', () => {
     test('single command success', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [['echo', 'hello world']],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['echo', 'hello world']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(events).toEqual([
         jobStarted('Test Job'),
@@ -38,15 +77,18 @@ describe('Job', () => {
     })
 
     test('multiple commands success', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['echo', 'hello world'],
-          ['sleep', '0.1'],
-          ['echo', 'goodbye'],
-        ],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'hello world'],
+            ['sleep', '0.1'],
+            ['echo', 'goodbye'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(events).toEqual([
         jobStarted('Test Job'),
@@ -61,11 +103,14 @@ describe('Job', () => {
     })
 
     test('non-zero exit code fails job', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'exit 1']],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'exit 1']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(events).toEqual([
         jobStarted('Test Job'),
@@ -76,26 +121,32 @@ describe('Job', () => {
     })
 
     test('preserves custom exit code', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'exit 42']],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'exit 42']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       const finishedMsg = findMessage(events, 'command:finished')
       expect(finishedMsg?.result).toEqual({ exitCode: 42 })
     })
 
     test('mid-sequence failure stops job', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['echo', 'hello'],
-          ['sh', '-c', 'exit 1'],
-          ['echo', 'never runs'],
-        ],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'hello'],
+            ['sh', '-c', 'exit 1'],
+            ['echo', 'never runs'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(events).toEqual([
         jobStarted('Test Job'),
@@ -108,11 +159,14 @@ describe('Job', () => {
     })
 
     test('signal exit code (SIGTERM)', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'kill -TERM $$']],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'kill -TERM $$']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // 1-127 = process failed
       // 128+ = killed by signal (128 + signal number)
@@ -127,15 +181,18 @@ describe('Job', () => {
     })
 
     test('signal exit code mid-sequence stops job', async () => {
-      const { events } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['echo', 'hello'],
-          ['sh', '-c', 'kill -TERM $$'],
-          ['echo', 'never runs'],
-        ],
-        image: 'node:alpine',
-      })
+      const { events } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'hello'],
+            ['sh', '-c', 'kill -TERM $$'],
+            ['echo', 'never runs'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // 1-127 = process failed
       // 128+ = killed by signal (128 + signal number)
@@ -152,11 +209,14 @@ describe('Job', () => {
 
   describe('Command not found', () => {
     test('command not found', async () => {
-      const { events, logs: _logs } = await runJob({
-        name: 'Test Job',
-        commands: [['nonexistent-command-xyz']],
-        image: 'node:alpine',
-      })
+      const { events, logs: _logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['nonexistent-command-xyz']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // 1-127 = process failed
       // 128+ = killed by signal (128 + signal number)
@@ -171,15 +231,18 @@ describe('Job', () => {
     })
 
     test('mid-sequence stops job', async () => {
-      const { events, logs: _logs } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['echo', 'hello'],
-          ['nonexistent-command-xyz'],
-          ['echo', 'never runs'],
-        ],
-        image: 'node:alpine',
-      })
+      const { events, logs: _logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'hello'],
+            ['nonexistent-command-xyz'],
+            ['echo', 'never runs'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // 1-127 = process failed
       // 128+ = killed by signal (128 + signal number)
@@ -205,37 +268,46 @@ describe('Job', () => {
 
   describe('Job logging', () => {
     test('logs stdout correctly', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['echo', 'hello'],
-          ['echo', 'world'],
-        ],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'hello'],
+            ['echo', 'world'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toEqual(['hello', 'world'])
     })
 
     test('logs stderr correctly', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [
-          ['sh', '-c', 'echo "error message" >&2'],
-          ['echo', 'hello after an error message'],
-        ],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['sh', '-c', 'echo "error message" >&2'],
+            ['echo', 'hello after an error message'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toEqual(['error message', 'hello after an error message'])
     })
 
     test('logs stdout and stderr merged', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // All output should be captured (order may vary due to stream merging)
       expect(logs).toContain('out')
@@ -245,31 +317,40 @@ describe('Job', () => {
     })
 
     test('no output produces empty logs', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['true']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['true']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toEqual([])
     })
 
     test('logs captured on failure', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'echo "dying"; exit 1']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'echo "dying"; exit 1']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toContain('dying')
     })
 
     test('multi-line output from single command', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['printf', 'a\\nb\\nc']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['printf', 'a\\nb\\nc']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toEqual(['a', 'b', 'c'])
     })
@@ -277,11 +358,14 @@ describe('Job', () => {
 
   describe('Logging stress', () => {
     test('large output (1000 lines)', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['seq', '1', '10000']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['seq', '1', '10000']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toHaveLength(10000)
       expect(logs[0]).toBe('1')
@@ -289,11 +373,14 @@ describe('Job', () => {
     })
 
     test('rapid burst output', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [['sh', '-c', 'for i in $(seq 1 100); do echo $i; done']],
-        image: 'node:alpine',
-      })
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [['sh', '-c', 'for i in $(seq 1 100); do echo $i; done']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       expect(logs).toHaveLength(100)
       expect(logs[0]).toBe('1')
@@ -301,17 +388,20 @@ describe('Job', () => {
     })
 
     test('interleaved stdout and stderr under load', async () => {
-      const { logs } = await runJob({
-        name: 'Test Job',
-        commands: [
-          [
-            'sh',
-            '-c',
-            'for i in $(seq 1 50); do echo "out$i"; echo "err$i" >&2; done',
+      const { logs } = await runJob(
+        {
+          name: 'Test Job',
+          commands: [
+            [
+              'sh',
+              '-c',
+              'for i in $(seq 1 50); do echo "out$i"; echo "err$i" >&2; done',
+            ],
           ],
-        ],
-        image: 'node:alpine',
-      })
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
 
       // Should capture all 100 lines (50 stdout + 50 stderr)
       expect(logs).toHaveLength(100)
