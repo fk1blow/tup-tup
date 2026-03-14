@@ -36,14 +36,9 @@ export class Job {
   async run() {
     let jobSucceeded = true
 
-    // this.reporter.emit('job:started', { jobName: this.definition.name })
     this.reporter.onJobStarted({ jobName: this.definition.name })
 
     for (const [commandIndex, command] of this.definition.commands.entries()) {
-      // this.reporter.emit('command:started', {
-      //   jobName: this.definition.name,
-      //   commandIndex,
-      // })
       this.reporter.onCommandStarted({
         jobName: this.definition.name,
         commandIndex,
@@ -51,11 +46,6 @@ export class Job {
 
       const runCommandResult = await this.runCommand(command)
 
-      // this.reporter.emit('command:finished', {
-      //   jobName: this.definition.name,
-      //   commandIndex,
-      //   result: runCommandResult,
-      // })
       this.reporter.onCommandFinished({
         jobName: this.definition.name,
         commandIndex,
@@ -68,10 +58,6 @@ export class Job {
       }
     }
 
-    // this.reporter.emit('job:finished', {
-    //   jobName: this.definition.name,
-    //   success: jobSucceeded,
-    // })
     this.reporter.onJobFinished({
       jobName: this.definition.name,
       success: jobSucceeded,
