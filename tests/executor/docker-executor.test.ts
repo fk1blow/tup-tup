@@ -9,13 +9,13 @@ import {
 } from 'bun:test'
 import { DockerExecutor } from '../../src/docker-executor'
 import {
+  filterRunningContainers,
+  removeContainerByName,
+} from '../test-helpers/executor.test-helpers'
+import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
 } from '../workspace.test-helpers'
-import {
-  filterRunningContainers,
-  removeContainerByName,
-} from './executor.test-helpers'
 
 const containerNamePattern = /^tuptup-[\w-]+-\d+$/
 const containerIdPattern = /^[0-9a-f]{12,64}$/
@@ -43,6 +43,7 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
       expect(runtime.containerName).toMatch(containerNamePattern)
@@ -52,9 +53,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Start Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
       expect(runtime.containerName).toMatch(containerNamePattern)
       expect(runtime.containerId).toMatch(containerIdPattern)
 
@@ -77,9 +79,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Stop Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
 
       await removeContainerByName(runtime.containerName)
       expect(runtime.stop()).resolves.toBeUndefined()
@@ -90,10 +93,11 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Invalid Image Test Job',
         image: 'nonexistent:image',
+        workspacePath,
       })
 
       // This is fine
-      await expect(runtime.start(workspacePath)).rejects.toThrow(
+      await expect(runtime.start()).rejects.toThrow(
         /Unable to find image 'nonexistent:image'/,
       )
     })
@@ -104,12 +108,14 @@ describe('Docker Executor', async () => {
       const runtime1 = new DockerExecutor({
         name: 'Duplicate Name Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
-      await runtime1.start(workspacePath)
+      await runtime1.start()
 
       const runtime2 = new DockerExecutor({
         name: 'Duplicate Name Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
       spy.mockRestore()
@@ -138,6 +144,7 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Stop Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
       // This is fine
@@ -150,9 +157,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Stop Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
       await expect(runtime.start()).rejects.toThrow(
         /Conflict. The container name "\/tuptup-stop-test-job-\d+" is already in use/,
       )
@@ -164,9 +172,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Exec Command Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
 
       const { stdout, stderr } = await runtime.exec([
         'echo',
@@ -185,9 +194,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Exec Multiple Commands Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
 
       const commands = [
         ['echo', 'first command'],
@@ -210,9 +220,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Exec Unknown Command Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
 
       const { stdout, exited } = await runtime.exec(['nonexistent-command-xyz'])
       const stdoutText = await new Response(stdout).text()
@@ -228,9 +239,10 @@ describe('Docker Executor', async () => {
       const runtime = new DockerExecutor({
         name: 'Exec Unknown Command Test Job',
         image: 'node:alpine',
+        workspacePath,
       })
 
-      await runtime.start(workspacePath)
+      await runtime.start()
 
       const { stdout, exited } = await runtime.exec(['sh', '-c', 'exit 42'])
       const stdoutText = await new Response(stdout).text()
