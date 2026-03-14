@@ -1,7 +1,11 @@
 import EventEmitter from 'node:events'
+import { DockerExecutorFactory } from './docker-executor-factory'
+import { EventEmitterReporter } from './event-emitter-reporter'
+import { EventEmitterReporterFactory } from './event-emitter-reporter-factory'
+import { FileLoggerFactory } from './file-logger-factory'
+import { JobCoordinator } from './job-coordinator'
 import type { JobEventMap } from './job.types'
 import { Provisioner } from './provisioner'
-import { Workflow } from './workflow'
 
 export class Runner {
   // These 3(workspace, repoUrl, repoBranch) might also need the path supplied by the system where tuptup is running,
@@ -22,7 +26,7 @@ export class Runner {
     this._workspace = opts.workspace
     this._repoUrl = opts.repoUrl
     this._repoBranch = opts.repoBranch
-    // TODO this emitter could be used with some other events as well,
+    // The emitter could be used with some other events as well,
     // not just the ones from the Job class: provisioning events, workflow events, etc
     this._emitter = new EventEmitter<JobEventMap>()
   }
@@ -34,9 +38,16 @@ export class Runner {
       workspacePath: this._workspace,
     })
 
-    const pipelineCtx = await provisioner.prepare()
+    const runtimeCtx = await provisioner.prepare()
 
-    const workflow = new Workflow(pipelineCtx, this._emitter)
-    await workflow.run()
+    const jobCoordinator = new JobCoordinator({
+      runtimeCtx,
+      jobReporter: new EventEmitterReporter(this._emitter),
+      fileLoggerFactory: new FileLoggerFactory(runtimeCtx.logsPath),
+      dockerExecutorFactory: new DockerExecutorFactory(
+        runtimeCtx.workspacePath,
+      ),
+    })
+    await jobCoordinator.run()
   }
 }

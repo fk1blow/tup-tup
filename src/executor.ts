@@ -11,9 +11,5 @@ export interface Executor {
 }
 
 export interface ExecutorFactory {
-  create(opts: {
-    image: string
-    name: string
-    workspacePath: string
-  }): Executor & Lifecycle
+  create(opts: { image: string; name: string }): Executor & Lifecycle
 }

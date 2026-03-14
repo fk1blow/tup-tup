@@ -1,22 +1,33 @@
-import mergeStreams from '@sindresorhus/merge-streams'
 import type EventEmitter from 'node:events'
-import { Readable } from 'node:stream'
-import type { ExecResult, Executor } from '../src/executor'
+import type { Executor } from '../src/executor'
 import type {
   JobCommandResult,
   JobDefinition,
   JobEventMap,
 } from '../src/job.types'
 import { JobDefinition as JobDefinitionParser } from '../src/job.types'
+import type { JobReporter } from './job-reporter'
+import type { Logger } from './logger'
 
 export class Job {
-  constructor(
-    private definition: JobDefinition,
-    private events: EventEmitter<JobEventMap>,
-    private logger: WritableStream<Uint8Array>,
-    private executor: Executor,
-  ) {
-    const { success, error } = JobDefinitionParser.safeParse(definition)
+  private definition: JobDefinition
+  private reporter: JobReporter
+  private logger: Logger
+  private executor: Executor
+
+  constructor(opts: {
+    definition: JobDefinition
+    reporter: JobReporter
+    logger: Logger
+    executor: Executor
+  }) {
+    const { definition, reporter, logger, executor } = opts
+    this.definition = definition
+    this.reporter = reporter
+    this.logger = logger
+    this.executor = executor
+
+    const { success, error } = JobDefinitionParser.safeParse(opts.definition)
     if (!success) {
       throw new Error(`Invalid job definition: ${error.message}`)
     }
@@ -25,17 +36,27 @@ export class Job {
   async run() {
     let jobSucceeded = true
 
-    this.events.emit('job:started', { jobName: this.definition.name })
+    // this.reporter.emit('job:started', { jobName: this.definition.name })
+    this.reporter.onJobStarted({ jobName: this.definition.name })
 
     for (const [commandIndex, command] of this.definition.commands.entries()) {
-      this.events.emit('command:started', {
+      // this.reporter.emit('command:started', {
+      //   jobName: this.definition.name,
+      //   commandIndex,
+      // })
+      this.reporter.onCommandStarted({
         jobName: this.definition.name,
         commandIndex,
       })
 
       const runCommandResult = await this.runCommand(command)
 
-      this.events.emit('command:finished', {
+      // this.reporter.emit('command:finished', {
+      //   jobName: this.definition.name,
+      //   commandIndex,
+      //   result: runCommandResult,
+      // })
+      this.reporter.onCommandFinished({
         jobName: this.definition.name,
         commandIndex,
         result: runCommandResult,
@@ -47,7 +68,11 @@ export class Job {
       }
     }
 
-    this.events.emit('job:finished', {
+    // this.reporter.emit('job:finished', {
+    //   jobName: this.definition.name,
+    //   success: jobSucceeded,
+    // })
+    this.reporter.onJobFinished({
       jobName: this.definition.name,
       success: jobSucceeded,
     })
@@ -56,33 +81,12 @@ export class Job {
   private async runCommand(cmd: string[]): Promise<JobCommandResult> {
     const execResult = await this.executor.exec(cmd)
 
-    await this.pipeToLogging({
-      stdout: execResult.stdout,
-      stderr: execResult.stderr,
-    })
+    await this.logger.pipe(execResult.stdout, execResult.stderr)
 
     const exitCode = await execResult.exited
 
     // 1-127 = process faild
     // 128+ = killed by signal (128 + signal number)
     return { exitCode }
-  }
-
-  private async pipeToLogging({
-    stdout,
-    stderr,
-  }: Pick<ExecResult, 'stdout' | 'stderr'>) {
-    // TODO see the performance penalty of this conversion and consider alternatives if it's significant
-    // Convert web streams to Node.js streams for merging
-    // See https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
-    const nodeStdout = Readable.fromWeb(stdout)
-    const nodeStderr = Readable.fromWeb(stderr)
-
-    // Merge the 2 streams and convert back to a web stream for piping to the output
-    const merged: ReadableStream<Uint8Array> = Readable.toWeb(
-      mergeStreams([nodeStdout, nodeStderr]),
-    )
-
-    await merged.pipeTo(this.logger, { preventClose: true })
   }
 }

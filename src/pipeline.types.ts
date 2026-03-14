@@ -11,13 +11,3 @@ export const PipelineDefinition = z.object({
 })
 
 export type PipelineDefinition = z.infer<typeof PipelineDefinition>
-
-export interface PipelineContext {
-  repoUrl: string
-  repoBranch?: string
-  definition: PipelineDefinition
-  workspacePath: string
-  artifactsPath: string
-  logsPath: string
-  appPath: string
-}

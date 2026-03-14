@@ -2,34 +2,37 @@ import type { Subprocess } from 'bun'
 import type { ExecResult, Executor } from './executor'
 import type { Lifecycle } from './lifecycle'
 
-export class DockerExecutor implements Executor {
-  private _image: string
-  private _name: string
+export class DockerExecutor implements Executor, Lifecycle {
+  private _imageName: string
+  private _containerName: string
+  private _workspacePath: string
   private _id: string | null = null
 
-  constructor({ image, name }: { image: string; name: string }) {
-    this._image = image
-    this._name = `tuptup-${name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
+  constructor(opts: { image: string; name: string; workspacePath: string }) {
+    const { image, name, workspacePath } = opts
+    this._imageName = image
+    this._containerName = `tuptup-${name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
+    this._workspacePath = workspacePath
   }
 
   get containerName() {
-    return this._name
+    return this._containerName
   }
 
   get containerId() {
     return this._id
   }
 
-  async start(workspacePath: string) {
+  async start() {
     const runArgs = ['docker', 'run', '-d']
     const workingDirArgs = [
       '-v',
-      `${workspacePath}:/workspace`,
+      `${this._workspacePath}:/workspace`,
       '-w',
       '/workspace/app',
     ]
-    const nameArg = `--name=${this._name}`
-    const imageArg = this._image
+    const nameArg = `--name=${this._containerName}`
+    const imageArg = this._imageName
     const keepAliveArgs = ['tail', '-f', '/dev/null']
 
     const subprocess = Bun.spawn(

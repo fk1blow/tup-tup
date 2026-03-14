@@ -1,10 +1,11 @@
 import { YAML } from 'bun'
 import { mkdirSync, statSync } from 'fs'
 import path from 'path'
-import { PipelineDefinition, type PipelineContext } from './pipeline.types'
+import { PipelineDefinition } from './pipeline.types'
+import type { RuntimeContext } from './runtime-context'
 
 type IncompletePipelineContext = Omit<
-  PipelineContext,
+  RuntimeContext,
   'definition' | 'artifactsPath' | 'logsPath' | 'repoPath'
 > & {
   definition?: PipelineDefinition
@@ -14,7 +15,7 @@ export class Provisioner {
   private _repoUrl: string
   private _branch?: string
   private _workspacePath: string
-  private _pipelineContext: IncompletePipelineContext | PipelineContext
+  private _runtimeCtx: IncompletePipelineContext | RuntimeContext
 
   constructor(opts: {
     repoUrl: string
@@ -26,7 +27,7 @@ export class Provisioner {
 
     this._workspacePath = opts.workspacePath
 
-    this._pipelineContext = {
+    this._runtimeCtx = {
       repoUrl: this._repoUrl,
       repoBranch: this._branch,
       workspacePath: this._workspacePath,
@@ -39,13 +40,13 @@ export class Provisioner {
     return new Provisioner(opts)
   }
 
-  async prepare(): Promise<PipelineContext> {
+  async prepare(): Promise<RuntimeContext> {
     await this.prepareWorkspace()
     await this.cloneRepo()
     await this.parseConfig()
     // We can safely cast the pipeline context to the complete version here
     // If any of the steps above failed, an error would have been thrown
-    return this._pipelineContext as PipelineContext
+    return this._runtimeCtx as RuntimeContext
   }
 
   private async prepareWorkspace() {
@@ -77,8 +78,8 @@ export class Provisioner {
       )
     }
 
-    this._pipelineContext = {
-      ...this._pipelineContext,
+    this._runtimeCtx = {
+      ...this._runtimeCtx,
       artifactsPath,
       logsPath,
       appPath,
@@ -113,8 +114,8 @@ export class Provisioner {
         `Provisioner: Invalid pipeline configuration ${JSON.stringify(configValidation.error.issues)}`,
       )
 
-    this._pipelineContext = {
-      ...this._pipelineContext,
+    this._runtimeCtx = {
+      ...this._runtimeCtx,
       definition: configValidation.data,
     }
   }
