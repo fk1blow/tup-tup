@@ -1,4 +1,5 @@
-import { EventEmitter } from 'node:events'
+import mergeStreams from '@sindresorhus/merge-streams'
+import { Readable } from 'node:stream'
 import { DockerExecutor } from '../../src/docker-executor'
 import { Job } from '../../src/job'
 import {
@@ -66,6 +67,7 @@ export const findMessage = <T extends keyof JobEventMap>(
  */
 export const runJob = async (
   definition: JobDefinition,
+  workspacePath: string,
 ): Promise<{
   events: TypedJobEvent[]
   logs: string[]
@@ -87,31 +89,57 @@ export const runJob = async (
     },
   })
 
-  const emitter = new EventEmitter<JobEventMap>()
+  const reporter = {
+    onJobStarted(payload: JobEventMap['job:started'][0]) {
+      events.push({ type: 'job:started', ...payload })
+    },
+    onCommandStarted(payload: JobEventMap['command:started'][0]) {
+      events.push({ type: 'command:started', ...payload })
+    },
+    onCommandFinished(payload: JobEventMap['command:finished'][0]) {
+      events.push({ type: 'command:finished', ...payload })
+    },
+    async onJobFinished(payload: JobEventMap['job:finished'][0]) {
+      events.push({ type: 'job:finished', ...payload })
+      await logStream.close()
+    },
+  }
 
-  // Collect events as JobMessage objects
-  emitter.on('job:started', payload => {
-    events.push({ type: 'job:started', ...payload })
-  })
-  emitter.on('command:started', payload => {
-    events.push({ type: 'command:started', ...payload })
-  })
-  emitter.on('command:finished', payload => {
-    events.push({ type: 'command:finished', ...payload })
-  })
-  emitter.on('job:finished', async payload => {
-    events.push({ type: 'job:finished', ...payload })
-    await logStream.close()
-  })
+  const logger = {
+    async write(line: string) {
+      logs.push(line)
+    },
+    async pipe(...streams: ReadableStream[]) {
+      const readableStreams = streams.map(stream => Readable.fromWeb(stream))
+      const mergedStream: ReadableStream<Uint8Array> = Readable.toWeb(
+        mergeStreams(readableStreams),
+      )
+      await mergedStream.pipeTo(logStream, {
+        preventClose: true,
+      })
+    },
+    async stop() {
+      await logStream.getWriter().close()
+    },
+  }
 
+  // Don't like this being hardcoded, but b/c i cannot fully stub
+  // docker-executor behind a test-executor(mainly due to error being swallowed
+  // the docker runtime itself)
   const executor = new DockerExecutor({
-    name: 'Test Job',
-    image: 'node:alpine',
+    name: definition.name,
+    image: definition.image,
+    workspacePath,
   })
 
   await executor.start()
   try {
-    const job = new Job(definition, emitter, logStream, executor)
+    const job = new Job({
+      definition,
+      reporter,
+      executor,
+      logger,
+    })
     await job.run()
   } finally {
     await executor.stop()
