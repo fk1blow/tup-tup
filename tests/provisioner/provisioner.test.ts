@@ -73,10 +73,10 @@ describe('Provisioner', async () => {
       const pipelineContext = await p.prepare()
 
       expect(pipelineContext).not.toBeNull()
-      expect(pipelineContext.definition?.name).toBe('my-pipeline')
-      expect(pipelineContext.definition?.jobs).toHaveLength(2)
-      expect(pipelineContext.definition?.jobs[0]?.name).toBe('test')
-      expect(pipelineContext.definition?.jobs[1]?.name).toBe('build')
+      expect(pipelineContext.pipeline?.name).toBe('my-pipeline')
+      expect(pipelineContext.pipeline?.jobs).toHaveLength(2)
+      expect(pipelineContext.pipeline?.jobs[0]?.name).toBe('test')
+      expect(pipelineContext.pipeline?.jobs[1]?.name).toBe('build')
     })
   })
 

@@ -74,7 +74,7 @@ export const runJob = async (
 }> => {
   const logger = new TestListLogger()
 
-  const reporter = new TestEventsReporter(logger)
+  const reporter = new TestEventsReporter()
 
   // Don't like this being hardcoded, but b/c i cannot fully stub
   // docker-executor behind a test-executor(mainly due to error being swallowed
@@ -96,6 +96,7 @@ export const runJob = async (
     await job.run()
   } finally {
     await executor.stop()
+    await logger.stop()
   }
 
   return { events: reporter.events, logs: logger.logs }

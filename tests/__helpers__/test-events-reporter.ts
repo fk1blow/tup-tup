@@ -1,12 +1,9 @@
 import type { JobReporter } from '../../src/job-reporter'
 import type { JobEventMap } from '../../src/job.types'
-import type { Logger } from '../../src/logger'
 import type { TypedJobEvent } from './job.test-helpers'
 
 export class TestEventsReporter implements JobReporter {
   public events: TypedJobEvent[] = []
-
-  constructor(private logger: Logger) {}
 
   onJobStarted(payload: JobEventMap['job:started'][0]) {
     this.events.push({ type: 'job:started', ...payload })
@@ -22,6 +19,5 @@ export class TestEventsReporter implements JobReporter {
 
   async onJobFinished(payload: JobEventMap['job:finished'][0]) {
     this.events.push({ type: 'job:finished', ...payload })
-    await this.logger.stop()
   }
 }
