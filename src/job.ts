@@ -1,10 +1,5 @@
-import type EventEmitter from 'node:events'
 import type { Executor } from '../src/executor'
-import type {
-  JobCommandResult,
-  JobDefinition,
-  JobEventMap,
-} from '../src/job.types'
+import type { JobCommandResult, JobDefinition } from '../src/job.types'
 import { JobDefinition as JobDefinitionParser } from '../src/job.types'
 import type { JobReporter } from './job-reporter'
 import type { Logger } from './logger'
@@ -22,6 +17,7 @@ export class Job {
     executor: Executor
   }) {
     const { definition, reporter, logger, executor } = opts
+
     this.definition = definition
     this.reporter = reporter
     this.logger = logger

@@ -80,7 +80,7 @@ export const runJob = async (
   // docker-executor behind a test-executor(mainly due to error being swallowed
   // the docker runtime itself)
   const executor = new DockerExecutor({
-    name: definition.name,
+    pipelineName: definition.name,
     image: definition.image,
     workspacePath,
   })

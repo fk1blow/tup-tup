@@ -6,7 +6,12 @@ import {
 import { setupWorkspaceIn, teardownWorkspaceIn } from './workspace.test-helpers'
 
 export interface WorkspaceContext {
+  repoUrl: string
+  repoBranch: string
   workspacePath: string
+  artifactsPath: string
+  logsPath: string
+  appPath: string
 }
 
 export function describeWithWorkspace(
@@ -15,10 +20,20 @@ export function describeWithWorkspace(
   fn: (ctx: WorkspaceContext) => void,
 ) {
   describe(name, () => {
-    const ctx: WorkspaceContext = { workspacePath: '' }
+    const ctx: WorkspaceContext = {
+      repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+      repoBranch: 'main',
+      workspacePath: '',
+      artifactsPath: '',
+      logsPath: '',
+      appPath: '',
+    }
 
     beforeEach(() => {
       ctx.workspacePath = setupWorkspaceIn(workingDir)
+      ctx.artifactsPath = `${ctx.workspacePath}/artifacts`
+      ctx.logsPath = `${ctx.workspacePath}/logs`
+      ctx.appPath = `${ctx.workspacePath}/app`
     })
 
     afterEach(() => {

@@ -4,9 +4,9 @@ import path from 'path'
 import { PipelineDefinition } from './pipeline.types'
 import type { RuntimeContext } from './runtime-context'
 
-type IncompletePipelineContext = Omit<
+type IncompleteRuntimeContext = Omit<
   RuntimeContext,
-  'definition' | 'artifactsPath' | 'logsPath' | 'repoPath'
+  'definition' | 'artifactsPath' | 'logsPath' | 'repoPath' | 'appPath'
 > & {
   definition?: PipelineDefinition
 }
@@ -15,7 +15,7 @@ export class Provisioner {
   private _repoUrl: string
   private _branch?: string
   private _workspacePath: string
-  private _runtimeCtx: IncompletePipelineContext | RuntimeContext
+  private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
 
   constructor(opts: {
     repoUrl: string
@@ -24,7 +24,6 @@ export class Provisioner {
   }) {
     this._repoUrl = opts.repoUrl
     this._branch = opts.branch
-
     this._workspacePath = opts.workspacePath
 
     this._runtimeCtx = {
@@ -34,6 +33,7 @@ export class Provisioner {
     }
   }
 
+  // Why do we need this?
   static create(
     opts: ConstructorParameters<typeof Provisioner>[0],
   ): Provisioner {

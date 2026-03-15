@@ -1,7 +1,7 @@
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import type { JobReporter } from './job-reporter'
-import type { JobDefinition, JobEventMap } from './job.types'
+import type { JobDefinition } from './job.types'
 import type { LoggerFactory } from './logger'
 import type { RuntimeContext } from './runtime-context'
 
@@ -13,8 +13,8 @@ export class JobCoordinator {
 
   constructor(opts: {
     runtimeCtx: RuntimeContext
-    fileLoggerFactory: LoggerFactory
     jobReporter: JobReporter
+    fileLoggerFactory: LoggerFactory
     dockerExecutorFactory: ExecutorFactory
   }) {
     const {
@@ -36,6 +36,8 @@ export class JobCoordinator {
     // - use the `https://www.npmjs.com/package/dependency-graph` package to determine the order of execution for the jobs
     // - if a job fails, we should mark all the dependent jobs as failed as well, and skip their execution
     // -..... and more
+    //
+    // 3 final states of a job: pending, failed, success
     for (const job of this.runtimeCtx.definition.jobs) {
       await this.runJob(job)
     }
@@ -50,8 +52,6 @@ export class JobCoordinator {
     })
 
     const logger = this.fileLoggerFactory.create(jobDefinition.name)
-
-    // const emitter = this.
 
     try {
       await executor.start()
