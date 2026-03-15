@@ -11,11 +11,11 @@ import { DockerExecutor } from '../../src/docker-executor'
 import {
   filterRunningContainers,
   removeContainerByName,
-} from '../test-helpers/executor.test-helpers'
+} from '../__helpers__/executor.test-helpers'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../workspace.test-helpers'
+} from '../__helpers__/workspace.test-helpers'
 
 const containerNamePattern = /^tuptup-[\w-]+-\d+$/
 const containerIdPattern = /^[0-9a-f]{12,64}$/
