@@ -1,7 +1,6 @@
 import {
   afterAll,
   afterEach,
-  beforeAll,
   beforeEach,
   describe,
   expect,
@@ -10,7 +9,7 @@ import {
 import {
   filterRunningContainers,
   removeContainerByName,
-} from '../test-helpers/executor.test-helpers'
+} from '../__helpers__/executor.test-helpers'
 import {
   commandFinished,
   commandStarted,
@@ -18,11 +17,11 @@ import {
   jobFinished,
   jobStarted,
   runJob,
-} from '../test-helpers/job.test-helpers'
+} from '../__helpers__/job.test-helpers'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../test-helpers/workspace.test-helpers'
+} from '../__helpers__/workspace.test-helpers'
 
 describe('Job', () => {
   afterAll(async () => {
