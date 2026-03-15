@@ -7,7 +7,20 @@ export const PipelineDefinition = z.object({
     .min(1, 'Pipeline name cannot be empty'),
   jobs: z
     .array(JobDefinition)
-    .nonempty({ message: 'At least one job is required' }),
+    .nonempty({ message: 'At least one job is required' })
+    .superRefine((jobs, ctx) => {
+      const names = new Set<string>()
+      for (const job of jobs) {
+        if (names.has(job.name)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `Duplicate job name: "${job.name}"`,
+            path: [jobs.indexOf(job), 'name'],
+          })
+        }
+        names.add(job.name)
+      }
+    }),
 })
 
 export type PipelineDefinition = z.infer<typeof PipelineDefinition>
