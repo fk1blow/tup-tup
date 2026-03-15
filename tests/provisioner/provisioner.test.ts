@@ -5,7 +5,7 @@ import { Provisioner } from '../../src/provisioner'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../workspace.test-helpers'
+} from '../test-helpers/workspace.test-helpers'
 
 describe('Provisioner', async () => {
   let workspacePath: string
@@ -18,7 +18,7 @@ describe('Provisioner', async () => {
     teardownWorkspaceIn(workspacePath)
   })
 
-  describe('Happy Path', () => {
+  describe('Provisioner', () => {
     it(`should prepare the workspace`, async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
@@ -128,6 +128,19 @@ describe('Provisioner', async () => {
       // Trust me bro
       await expect(p.prepare()).rejects.toThrow(
         /Provisioner: Invalid pipeline configuration/,
+      )
+    })
+
+    it("should throw an error if the job names aren't unique", async () => {
+      const p = new Provisioner({
+        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+        branch: 'test/invalid-config-job-not-unique',
+        workspacePath: workspacePath,
+      })
+
+      // Trust me bro
+      await expect(p.prepare()).rejects.toThrow(
+        /Provisioner: Invalid pipeline configuration.*Duplicate job name: \\"test\\"/,
       )
     })
   })
