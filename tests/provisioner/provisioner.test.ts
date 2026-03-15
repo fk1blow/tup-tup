@@ -5,7 +5,7 @@ import { Provisioner } from '../../src/provisioner'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../test-helpers/workspace.test-helpers'
+} from '../__helpers__/workspace.test-helpers'
 
 describe('Provisioner', async () => {
   let workspacePath: string
