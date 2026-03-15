@@ -5,7 +5,7 @@ import { Runner } from '../../src/runner'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../workspace.test-helpers'
+} from '../__helpers__/workspace.test-helpers'
 
 describe('Runner', async () => {
   let workspacePath: string
