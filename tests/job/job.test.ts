@@ -22,7 +22,7 @@ import {
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
-} from '../workspace.test-helpers'
+} from '../test-helpers/workspace.test-helpers'
 
 describe('Job', () => {
   afterAll(async () => {
