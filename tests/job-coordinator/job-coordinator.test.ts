@@ -29,6 +29,9 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
 
     await coordinator.run()
 
+    // console.log('ctx:', ctx)
+    // console.log('reporter:', reporter.events)
+
     expect(reporter.events.length).toBe(8)
   })
 
@@ -46,6 +49,7 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
           name: 'job_a',
           image: 'busybox',
           commands: [['echo', 'Hello from job_a!']],
+          dependsOn: ['job_c'],
         },
         {
           name: 'job_c',
@@ -67,8 +71,17 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
     const events = reporter.events
 
     expect(events.length).toBe(16)
-    expect(events[0]?.jobName).toBe('job_c')
-    expect(events[5]?.jobName).toBe('job_a')
+    expect(events[0]).toMatchObject({ jobName: 'job_c', type: 'job:started' })
+    expect(events[4]).toMatchObject({ jobName: 'job_a', type: 'job:started' })
+    expect(events.findIndex(e => e.jobName === 'job_b')).toBeGreaterThan(
+      events.findIndex(e => e.jobName === 'job_a'),
+    )
+    expect(events.findIndex(e => e.jobName === 'job_d')).toBeGreaterThan(
+      events.findIndex(e => e.jobName === 'job_a'),
+    )
+    expect(events.findIndex(e => e.jobName === 'job_d')).toBeGreaterThan(
+      events.findIndex(e => e.jobName === 'job_c'),
+    )
   })
 })
 
