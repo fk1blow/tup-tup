@@ -36,17 +36,21 @@ export class Provisioner {
   }
 
   // Why do we need this?
+  // TODO find out why we need this static method
   static create(
     opts: ConstructorParameters<typeof Provisioner>[0],
   ): Provisioner {
     return new Provisioner(opts)
   }
 
-  // TODO rename to `provision` or `setup`
+  // TODO rename to `provision` or (leaning towards)`setup`()
   async prepare(): Promise<RuntimeContext> {
     await this.prepareWorkspace()
     await this.cloneRepo()
     await this.parseConfig()
+    // TODO implement it and use this(use https://www.npmjs.com/package/dependency-graph)
+    // await this.validateCyclicDependencies()
+
     // We can safely cast the pipeline context to the complete version here
     // If any of the steps above failed, an error would have been thrown
     return this._runtimeCtx as RuntimeContext
