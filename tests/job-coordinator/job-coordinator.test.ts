@@ -29,13 +29,10 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
 
     await coordinator.run()
 
-    // console.log('ctx:', ctx)
-    // console.log('reporter:', reporter.events)
-
     expect(reporter.events.length).toBe(8)
   })
 
-  it.only('should handle a simple dependant job pipeline', async () => {
+  it('should handle a simple dependant job pipeline', async () => {
     const { coordinator, reporter } = setupCoordinator(ctx, {
       name: 'my-pipeline',
       jobs: [
@@ -48,28 +45,18 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
         {
           name: 'job_a',
           image: 'busybox',
-          commands: [
-            // ['sleep', '0.2'],
-            ['echo', 'Hello from job_a!'],
-          ],
+          commands: [['echo', 'Hello from job_a!']],
         },
         {
           name: 'job_c',
           image: 'busybox',
-          commands: [
-            // Strange this is
-            ['sleep', '0.5'],
-            ['echo', 'Hello from job_c!'],
-          ],
+          commands: [['sleep', '0.5']],
         },
 
         {
           name: 'job_d',
           image: 'busybox',
-          commands: [
-            // Strange this is
-            ['echo', 'Hello from job_d!'],
-          ],
+          commands: [['echo', 'Hello from job_d!']],
           dependsOn: ['job_a', 'job_c'],
         },
       ],
@@ -78,12 +65,10 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
     await coordinator.run()
 
     const events = reporter.events
-    // console.log('events:', events)
 
-    // expect(events[0]).toMatchObject({
-    //   jobName: 'job_a',
-    //   type: 'job:started',
-    // })
+    expect(events.length).toBe(16)
+    expect(events[0]?.jobName).toBe('job_c')
+    expect(events[5]?.jobName).toBe('job_a')
   })
 })
 
