@@ -31,6 +31,8 @@ export class Runner {
     this._emitter = new EventEmitter<JobEventMap>()
   }
 
+  // TODO i don't like the name of this method, maybe `start` or `execute` would be better
+  // or even `executePipeline`
   async run() {
     const provisioner = Provisioner.create({
       repoUrl: this._repoUrl,
