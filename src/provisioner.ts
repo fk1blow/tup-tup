@@ -6,9 +6,9 @@ import type { RuntimeContext } from './runtime-context'
 
 type IncompleteRuntimeContext = Omit<
   RuntimeContext,
-  'definition' | 'artifactsPath' | 'logsPath' | 'repoPath' | 'appPath'
+  'pipeline' | 'artifactsPath' | 'logsPath' | 'repoPath' | 'appPath'
 > & {
-  definition?: PipelineDefinition
+  pipeline?: PipelineDefinition
 }
 
 // TODO need to check the job definitions cyclic dependencies here as well
