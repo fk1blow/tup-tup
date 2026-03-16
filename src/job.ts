@@ -58,6 +58,11 @@ export class Job {
       jobName: this.definition.name,
       success: jobSucceeded,
     })
+
+    return Promise.resolve([jobSucceeded, this.definition] as [
+      boolean,
+      JobDefinition,
+    ])
   }
 
   private async runCommand(cmd: string[]): Promise<JobCommandResult> {

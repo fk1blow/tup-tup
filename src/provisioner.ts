@@ -116,7 +116,7 @@ export class Provisioner {
 
     this._runtimeCtx = {
       ...this._runtimeCtx,
-      definition: configValidation.data,
+      pipeline: configValidation.data,
     }
   }
 

@@ -11,6 +11,17 @@ export class JobCoordinator {
   private fileLoggerFactory: LoggerFactory
   private dockerExecutorFactory: ExecutorFactory
 
+  // finished either with success or failure
+  // private settledJobs: Array<[boolean, JobDefinition]> = []
+  private settledJobs: Map<string, [boolean, JobDefinition]> = new Map()
+  // jobs currently running
+  // private runningJobs: Array<{ jobName: string; success: boolean }> = []
+  // private runningJobs: Array<JobDefinition> = []
+  // private runningJobs: Array<JobDefinition> = []
+  // private runningJobs: Array<[JobDefinition, Promise<boolean>]> = []
+  private runningJobs: Map<string, Promise<[boolean, JobDefinition]>> =
+    new Map()
+
   constructor(opts: {
     runtimeCtx: RuntimeContext
     jobReporter: JobReporter
@@ -38,13 +49,73 @@ export class JobCoordinator {
     // -..... and more
     //
     // 3 final states of a job: pending, failed, success
-    for (const job of this.runtimeCtx.definition.jobs) {
-      await this.runJob(job)
+    // for (const job of this.runtimeCtx.pipeline.jobs) {
+    //   await this.runJob(job)
+    // }
+
+    // const readyJobs = this.getReadyJobs()
+    // console.log('readyJobs:', readyJobs)
+
+    while (true) {
+      const readyJobs = this.getReadyJobs()
+      console.log('readyJobs:', readyJobs.length)
+      // console.log('running jobs:', Array.from(this.runningJobs.keys()))
+      if (readyJobs.length === 0 && this.runningJobs.size === 0) break
+
+      // console.log(
+      //   'readyJobs:',
+      //   readyJobs.map(job => job.name),
+      // )
+
+      console.log('running jobs:', Array.from(this.runningJobs.keys()))
+
+      // this.addRunningJobs(readyJobs)
+      const alreadyRunningJobs = Array.from(this.runningJobs.values())
+
+      const nextRunningJobs = new Map(
+        readyJobs.map(job => [job.name, this.runJob(job)]),
+      )
+
+      nextRunningJobs.forEach((promise, jobName) => {
+        this.runningJobs.set(jobName, promise)
+      })
+      // console.log('next running jobs:', [
+      //   ...Array.from(this.runningJobs.keys()),
+      //   ...Array.from(nextRunningJobs.keys()),
+      // ])
+      console.log('next running jobs:', Array.from(this.runningJobs.keys()))
+      // Equivalent to:
+      // this.runningJobs = new Map([
+      //   ...this.runningJobs,
+      //   ...nextRunningJobs
+      // ])
+      // this.runningJobs.push(...nextRunningJobs)
+      // this.addRunningJobs
+
+      // We need to wait for both the currently running jobs and the read ones
+      // if not, we'll simply skip the ones that might have not settled yet(and still running)
+      const jobResult = await Promise.race([
+        ...alreadyRunningJobs,
+        ...nextRunningJobs.values(),
+        // readyJobs.map(job => this.runJob(job)),
+      ])
+      console.log('job finished:', jobResult[1].name, 'success:', jobResult[0])
+
+      // this.removeRunningJob(jobResult)
+      this.runningJobs.delete(jobResult[1].name)
+      console.log(
+        'remaining total jobs running:',
+        this.runtimeCtx.pipeline.jobs.length - this.settledJobs.size,
+      )
+      // this.addSettledJob(jobResult)
+      this.settledJobs.set(jobResult[1].name, jobResult)
+
+      console.log('-------------------------------')
     }
   }
 
   private async runJob(jobDefinition: JobDefinition) {
-    console.log(`Running job ${jobDefinition.name}...`)
+    // console.log(`Running job ${jobDefinition.name}...`)
 
     const executor = this.dockerExecutorFactory.create({
       name: jobDefinition.name,
@@ -53,18 +124,53 @@ export class JobCoordinator {
 
     const logger = this.fileLoggerFactory.create(jobDefinition.name)
 
+    let jobResult = [false, jobDefinition] as [boolean, JobDefinition]
+
     try {
       await executor.start()
+
       const job = new Job({
         definition: jobDefinition,
         reporter: this.jobReporter,
         logger,
         executor,
       })
-      await job.run()
+
+      const runResult = await job.run()
+      // jobResult = [runResult, jobDefinition]
+      jobResult = runResult
+    } catch (err) {
+      // TODO need more than this
+      // Maybe we should just re-throw the error and let the caller handle it,
+      // for example, if the executor fails to start, what do we do?
+      // Do we mark the job as failed and move on to the next one? Do we retry? Do we stop the whole pipeline?
+      console.error(`Error running job ${jobDefinition.name}:`, err)
+
+      jobResult = [false, jobDefinition]
     } finally {
       await executor.stop()
       await logger.stop()
     }
+
+    return jobResult
+  }
+
+  private getReadyJobs(): JobDefinition[] {
+    const allJobs = this.runtimeCtx.pipeline.jobs
+
+    return allJobs.filter(job => {
+      const isRunning = this.runningJobs.has(job.name)
+
+      const isSettled = this.settledJobs.has(job.name)
+
+      if (isRunning || isSettled) return false
+
+      if (!job.dependsOn) return true
+
+      return job.dependsOn.every(dep => {
+        const settledJob = this.settledJobs.get(dep)
+        return settledJob && settledJob[0] === true
+      })
+    })
   }
 }
