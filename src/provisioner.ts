@@ -11,6 +11,8 @@ type IncompleteRuntimeContext = Omit<
   definition?: PipelineDefinition
 }
 
+// TODO need to check the job definitions cyclic dependencies here as well
+// use https://www.npmjs.com/package/dependency-graph
 export class Provisioner {
   private _repoUrl: string
   private _branch?: string
@@ -40,6 +42,7 @@ export class Provisioner {
     return new Provisioner(opts)
   }
 
+  // TODO rename to `provision` or `setup`
   async prepare(): Promise<RuntimeContext> {
     await this.prepareWorkspace()
     await this.cloneRepo()

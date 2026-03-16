@@ -34,6 +34,7 @@ export class JobCoordinator {
     this.dockerExecutorFactory = dockerExecutorFactory
   }
 
+  // TODO rename to `coordinate`
   async run() {
     while (true) {
       const readyJobs = this.getReadyJobs()
