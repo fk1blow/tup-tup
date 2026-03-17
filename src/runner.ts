@@ -1,10 +1,9 @@
 import EventEmitter from 'node:events'
 import { DockerExecutorFactory } from './docker-executor-factory'
 import { EventEmitterReporter } from './event-emitter-reporter'
-import { EventEmitterReporterFactory } from './event-emitter-reporter-factory'
 import { FileLoggerFactory } from './file-logger-factory'
-import { JobCoordinator } from './job-coordinator'
 import type { JobEventMap } from './job.types'
+import { PipelineScheduler } from './pipeline-scheduler'
 import { Provisioner } from './provisioner'
 
 export class Runner {
@@ -42,7 +41,7 @@ export class Runner {
 
     const runtimeCtx = await provisioner.prepare()
 
-    const jobCoordinator = new JobCoordinator({
+    const jobCoordinator = new PipelineScheduler({
       runtimeCtx,
       jobReporter: new EventEmitterReporter(this._emitter),
       fileLoggerFactory: new FileLoggerFactory(runtimeCtx.logsPath),

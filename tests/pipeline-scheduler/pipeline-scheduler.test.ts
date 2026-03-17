@@ -1,6 +1,6 @@
 import { expect, it } from 'bun:test'
 import { DockerExecutor } from '../../src/docker-executor'
-import { JobCoordinator } from '../../src/job-coordinator'
+import { PipelineScheduler } from '../../src/pipeline-scheduler'
 import type { PipelineDefinition } from '../../src/pipeline.types'
 import { TestEventsReporter } from '../__helpers__/test-events-reporter'
 import { TestListLogger } from '../__helpers__/test-list-logger'
@@ -88,7 +88,7 @@ describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
 function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
   const reporter = new TestEventsReporter()
 
-  const coordinator = new JobCoordinator({
+  const coordinator = new PipelineScheduler({
     runtimeCtx: {
       ...ctx,
       pipeline,

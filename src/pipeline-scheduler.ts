@@ -5,7 +5,7 @@ import type { JobDefinition } from './job.types'
 import type { LoggerFactory } from './logger'
 import type { RuntimeContext } from './runtime-context'
 
-export class JobCoordinator {
+export class PipelineScheduler {
   private runtimeCtx: RuntimeContext
   private jobReporter: JobReporter
   private fileLoggerFactory: LoggerFactory
@@ -98,6 +98,8 @@ export class JobCoordinator {
       // Maybe we should just re-throw the error and let the caller handle it,
       // for example, if the executor fails to start, what do we do?
       // Do we mark the job as failed and move on to the next one? Do we retry? Do we stop the whole pipeline?
+      //
+      // Actually, this could fail in the middle of the pipeline execution
       console.error(`Error running job ${jobDefinition.name}:`, err)
 
       jobResult = [false, jobDefinition]
