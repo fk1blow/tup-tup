@@ -11,6 +11,14 @@ export class PipelineScheduler {
   private fileLoggerFactory: LoggerFactory
   private dockerExecutorFactory: ExecutorFactory
 
+  // TODO we also need to store if the job succeeded or not, or has been skipped
+  // something like this: Map<string, { settled: boolean, success: boolean, jobDefinition: JobDefinition }>
+  //
+  // TODO don't think we need to keep the job definition here,
+  // b/c we already have the Map's keys as the job names, which we can use
+  // to get the job definition from the runtime context.
+  //
+  // "settled" means finished one way or another, either success, failure, or skipped
   private settledJobs: Map<string, [boolean, JobDefinition]> = new Map()
   private runningJobs: Map<string, Promise<[boolean, JobDefinition]>> =
     new Map()
@@ -21,21 +29,13 @@ export class PipelineScheduler {
     fileLoggerFactory: LoggerFactory
     dockerExecutorFactory: ExecutorFactory
   }) {
-    const {
-      runtimeCtx,
-      jobReporter,
-      fileLoggerFactory,
-      dockerExecutorFactory,
-    } = opts
-
-    this.runtimeCtx = runtimeCtx
-    this.jobReporter = jobReporter
-    this.fileLoggerFactory = fileLoggerFactory
-    this.dockerExecutorFactory = dockerExecutorFactory
+    this.runtimeCtx = opts.runtimeCtx
+    this.jobReporter = opts.jobReporter
+    this.fileLoggerFactory = opts.fileLoggerFactory
+    this.dockerExecutorFactory = opts.dockerExecutorFactory
   }
 
-  // TODO rename to `coordinate`
-  async run() {
+  async schedule() {
     while (true) {
       const readyJobs = this.getReadyJobs()
       console.log('readyJobs:', readyJobs.length)
