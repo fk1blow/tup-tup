@@ -8,8 +8,10 @@ export const PipelineDefinition = z.object({
   jobs: z
     .array(JobDefinition)
     .nonempty({ message: 'At least one job is required' })
+    // check for duplicate job names
     .superRefine((jobs, ctx) => {
       const names = new Set<string>()
+
       for (const job of jobs) {
         if (names.has(job.name)) {
           ctx.addIssue({
@@ -18,6 +20,7 @@ export const PipelineDefinition = z.object({
             path: [jobs.indexOf(job), 'name'],
           })
         }
+
         names.add(job.name)
       }
     }),
