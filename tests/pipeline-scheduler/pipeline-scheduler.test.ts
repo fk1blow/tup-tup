@@ -9,7 +9,7 @@ import {
   type WorkspaceContext,
 } from '../__helpers__/workspace-describe'
 
-describeWithWorkspace('Job Coordinator', './tests/runner', ctx => {
+describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
   it('should handle a simple parallel job pipeline', async () => {
     const { coordinator, reporter } = setupCoordinator(ctx, {
       name: 'my-pipeline',
