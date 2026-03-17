@@ -59,6 +59,7 @@ export class Job {
       success: jobSucceeded,
     })
 
+    // TODO aaaaawh, so so
     return Promise.resolve([jobSucceeded, this.definition] as [
       boolean,
       JobDefinition,
