@@ -1,8 +1,6 @@
 import EventEmitter from 'node:events'
 import { DockerExecutorFactory } from './docker-executor-factory'
-import { EventEmitterReporter } from './event-emitter-reporter'
 import { FileLoggerFactory } from './file-logger-factory'
-import type { JobEventMap } from './job.types'
 import { PipelineScheduler } from './pipeline-scheduler'
 import { Provisioner } from './provisioner'
 
@@ -14,8 +12,6 @@ export class Runner {
   private _repoUrl: string
   private _repoBranch?: string
 
-  private _emitter: EventEmitter
-
   constructor(opts: {
     repoUrl: string
     repoBranch?: string
@@ -25,9 +21,6 @@ export class Runner {
     this._workspace = opts.workspace
     this._repoUrl = opts.repoUrl
     this._repoBranch = opts.repoBranch
-    // The emitter could be used with some other events as well,
-    // not just the ones from the Job class: provisioning events, workflow events, etc
-    this._emitter = new EventEmitter<JobEventMap>()
   }
 
   // TODO i don't like the name of this method, maybe `start` or `execute` would be better
@@ -41,14 +34,13 @@ export class Runner {
 
     const runtimeCtx = await provisioner.prepare()
 
-    const jobCoordinator = new PipelineScheduler({
+    const pipelineScheduler = new PipelineScheduler({
       runtimeCtx,
-      jobReporter: new EventEmitterReporter(this._emitter),
       fileLoggerFactory: new FileLoggerFactory(runtimeCtx.logsPath),
       dockerExecutorFactory: new DockerExecutorFactory(
         runtimeCtx.workspacePath,
       ),
     })
-    await jobCoordinator.run()
+    // await pipelineScheduler.schedule()
   }
 }
