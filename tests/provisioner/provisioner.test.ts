@@ -143,5 +143,20 @@ describe('Provisioner', async () => {
         /Provisioner: Invalid pipeline configuration.*Duplicate job name: \\"test\\"/,
       )
     })
+
+    // TODO
+    it("should throw an error if the job dependencies don't exist", async () => {
+      // const p = new Provisioner({
+      //   repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+      //   branch: 'test/invalid-config-job-not-unique',
+      //   workspacePath: workspacePath,
+      // })
+
+      // // Trust me bro
+      // await expect(p.prepare()).rejects.toThrow(
+      //   /Provisioner: Invalid pipeline configuration.*Duplicate job name: \\"test\\"/,
+      // )
+      throw new Error('Not implemented yet')
+    })
   })
 })
