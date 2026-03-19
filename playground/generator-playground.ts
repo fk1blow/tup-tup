@@ -93,13 +93,17 @@ const sourceFunction = async function* () {
   console.log('All jobs have been yielded')
 }
 
-// const source = sourceFunction()
-// const it = source[Symbol.asyncIterator]()
+const source = sourceFunction()
+const it = source[Symbol.asyncIterator]()
 
-// let next
-// next = await it.next()
+let next
+next = await it.next()
+next = await it.next()
+next = await it.next()
 // // First job,
-// console.log('value: ', next.value, ', done: ', next.done)
+console.log('value: ', next.value, ', done: ', next.done)
+next = await it.next()
+console.log('value: ', next.value, ', done: ', next.done)
 
 // await new Promise(resolve => setTimeout(resolve, 2000))
 // next = await it.next()
@@ -132,12 +136,11 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-const gate = deferred<string>()
-
+// const gate = deferred<string>()
 // somewhere else, later...
-setTimeout(() => {
-  gate.resolve('resolved from somwhere over the rainbow')
-}, 2000)
+// setTimeout(() => {
+//   gate.resolve('resolved from somwhere over the rainbow')
+// }, 2000)
 
 // const res = await gate.promise
 // console.log('res:', res)
@@ -154,7 +157,9 @@ class TaskRunner {
         const proc = Bun.spawn(args, { stdout: 'inherit', stderr: 'inherit' })
         const exitCode = await proc.exited
         if (exitCode !== 0) {
-          this.gate.reject(new Error(`Task failed: ${args.join(' ')} (exit ${exitCode})`))
+          this.gate.reject(
+            new Error(`Task failed: ${args.join(' ')} (exit ${exitCode})`),
+          )
           return
         }
       }
@@ -170,12 +175,12 @@ class TaskRunner {
 }
 
 // consumer
-const runner = new TaskRunner()
-runner.run([
-  ['bun', '--version'],
-  ['echo', 'hello'],
-  ['echo', 'world'],
-])
+// const runner = new TaskRunner()
+// runner.run([
+//   ['bun', '--version'],
+//   ['echo', 'hello'],
+//   ['echo', 'world'],
+// ])
 
-await runner.done
-console.log('pipeline complete!')
+// await runner.done
+// console.log('pipeline complete!')
