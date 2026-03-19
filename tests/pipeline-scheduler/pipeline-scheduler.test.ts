@@ -1,6 +1,4 @@
 import { expect, it } from 'bun:test'
-import { name } from 'node:assert'
-import { type } from 'node:os'
 import { DockerExecutor } from '../../src/docker-executor'
 import { PipelineScheduler } from '../../src/pipeline-scheduler'
 import type { PipelineDefinition } from '../../src/pipeline.types'
