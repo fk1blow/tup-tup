@@ -32,37 +32,3 @@ export const JobDefinitionJson = z
   .pipe(JobDefinition)
 
 export type JobDefinitionJson = z.infer<typeof JobDefinitionJson>
-
-export type JobCommandResult = {
-  exitCode: number
-}
-
-export type JobStartedEvent = { jobName: string }
-export type JobCommandStartedEvent = { jobName: string; commandIndex: number }
-export type JobCommandFinishedEvent = {
-  jobName: string
-  commandIndex: number
-  result: JobCommandResult
-}
-export type JobFinishedEvent = { jobName: string; success: boolean }
-
-export type JobEvent =
-  | JobStartedEvent
-  | JobFinishedEvent
-  | JobCommandStartedEvent
-  | JobCommandFinishedEvent
-
-/**
- * A mapping of job event types to their corresponding payloads
- * used for strongly-typed event emission
- *
- * Example:
- * `emitter.emit('command:started', { jobName: 'Test Job' })`
- * `emitter.emit('job:finished', { jobName: 'Test Job', success: true })`
- */
-export type JobEventMap = {
-  'job:started': [JobStartedEvent]
-  'command:started': [JobCommandStartedEvent]
-  'command:finished': [JobCommandFinishedEvent]
-  'job:finished': [JobFinishedEvent]
-}

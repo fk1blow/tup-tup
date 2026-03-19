@@ -10,14 +10,7 @@ import {
   filterRunningContainers,
   removeContainerByName,
 } from '../__helpers__/executor.test-helpers'
-import {
-  commandFinished,
-  commandStarted,
-  findMessage,
-  jobFinished,
-  jobStarted,
-  runJob,
-} from '../__helpers__/job.test-helpers'
+import { runJob } from '../__helpers__/job.test-helpers'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
@@ -58,7 +51,9 @@ describe('Job', () => {
 
   describe('Exited', () => {
     test('single command success', async () => {
-      const { events } = await runJob(
+      const {
+        jobResult: [success, jobDefinition],
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [['echo', 'hello world']],
@@ -67,16 +62,18 @@ describe('Job', () => {
         workspacePath,
       )
 
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 0 }),
-        jobFinished('Test Job', true),
-      ])
+      expect(success).toBe(true)
+      expect(jobDefinition).toEqual({
+        name: 'Test Job',
+        commands: [['echo', 'hello world']],
+        image: 'node:alpine',
+      })
     })
 
     test('multiple commands success', async () => {
-      const { events } = await runJob(
+      const {
+        jobResult: [success, jobDefinition],
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [
@@ -89,20 +86,22 @@ describe('Job', () => {
         workspacePath,
       )
 
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 0 }),
-        commandStarted('Test Job', 1),
-        commandFinished('Test Job', 1, { exitCode: 0 }),
-        commandStarted('Test Job', 2),
-        commandFinished('Test Job', 2, { exitCode: 0 }),
-        jobFinished('Test Job', true),
-      ])
+      expect(success).toBe(true)
+      expect(jobDefinition).toEqual({
+        name: 'Test Job',
+        commands: [
+          ['echo', 'hello world'],
+          ['sleep', '0.1'],
+          ['echo', 'goodbye'],
+        ],
+        image: 'node:alpine',
+      })
     })
 
     test('non-zero exit code fails job', async () => {
-      const { events } = await runJob(
+      const {
+        jobResult: [success, jobDefinition],
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [['sh', '-c', 'exit 1']],
@@ -111,150 +110,113 @@ describe('Job', () => {
         workspacePath,
       )
 
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 1 }),
-        jobFinished('Test Job', false),
-      ])
-    })
-
-    test('preserves custom exit code', async () => {
-      const { events } = await runJob(
-        {
-          name: 'Test Job',
-          commands: [['sh', '-c', 'exit 42']],
-          image: 'node:alpine',
-        },
-        workspacePath,
-      )
-
-      const finishedMsg = findMessage(events, 'command:finished')
-      expect(finishedMsg?.result).toEqual({ exitCode: 42 })
+      expect(success).toBe(false)
     })
 
     test('mid-sequence failure stops job', async () => {
-      const { events } = await runJob(
+      const {
+        jobResult: [success],
+        logs,
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [
-            ['echo', 'hello'],
+            ['echo', 'first'],
             ['sh', '-c', 'exit 1'],
-            ['echo', 'never runs'],
+            ['echo', 'should-not-appear'],
           ],
           image: 'node:alpine',
         },
         workspacePath,
       )
 
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 0 }),
-        commandStarted('Test Job', 1),
-        commandFinished('Test Job', 1, { exitCode: 1 }),
-        jobFinished('Test Job', false),
-      ])
+      expect(success).toBe(false)
+      expect(logs).toContain('first')
+      expect(logs).not.toContain('should-not-appear')
     })
 
-    test('signal exit code (SIGTERM)', async () => {
-      const { events } = await runJob(
+    test('kill signal (SIGTERM) fails job', async () => {
+      const {
+        jobResult: [success],
+      } = await runJob(
         {
           name: 'Test Job',
+          // 1-127 = process failed
+          // 128+ = killed by signal (128 + signal number)
           commands: [['sh', '-c', 'kill -TERM $$']],
           image: 'node:alpine',
         },
         workspacePath,
       )
 
-      // 1-127 = process failed
-      // 128+ = killed by signal (128 + signal number)
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, {
-          exitCode: 143,
-        }),
-        jobFinished('Test Job', false),
-      ])
+      expect(success).toBe(false)
     })
 
-    test('signal exit code mid-sequence stops job', async () => {
-      const { events } = await runJob(
+    test('kill signal mid-sequence stops job', async () => {
+      const {
+        jobResult: [success],
+        logs,
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [
-            ['echo', 'hello'],
+            ['echo', 'first'],
+            // 1-127 = process failed
+            // 128+ = killed by signal (128 + signal number)
             ['sh', '-c', 'kill -TERM $$'],
-            ['echo', 'never runs'],
+            ['echo', 'should-not-appear'],
           ],
           image: 'node:alpine',
         },
         workspacePath,
       )
 
-      // 1-127 = process failed
-      // 128+ = killed by signal (128 + signal number)
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 0 }),
-        commandStarted('Test Job', 1),
-        commandFinished('Test Job', 1, { exitCode: 143 }),
-        jobFinished('Test Job', false),
-      ])
+      expect(success).toBe(false)
+      expect(logs).toContain('first')
+      expect(logs).not.toContain('should-not-appear')
     })
   })
 
   describe('Command not found', () => {
     test('command not found', async () => {
-      const { events, logs: _logs } = await runJob(
+      const {
+        jobResult: [success, jobDefinition],
+      } = await runJob(
         {
           name: 'Test Job',
+          // 1-127 = process failed
+          // 128+ = killed by signal (128 + signal number)
           commands: [['nonexistent-command-xyz']],
           image: 'node:alpine',
         },
         workspacePath,
       )
 
-      // 1-127 = process failed
-      // 128+ = killed by signal (128 + signal number)
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, {
-          exitCode: 126,
-        }),
-        jobFinished('Test Job', false),
-      ])
+      expect(success).toBe(false)
     })
 
     test('mid-sequence stops job', async () => {
-      const { events, logs: _logs } = await runJob(
+      const {
+        jobResult: [success],
+        logs,
+      } = await runJob(
         {
           name: 'Test Job',
           commands: [
-            ['echo', 'hello'],
+            ['echo', 'first'],
+            // 1-127 = process failed
+            // 128+ = killed by signal (128 + signal number)
             ['nonexistent-command-xyz'],
-            ['echo', 'never runs'],
+            ['echo', 'should-not-appear'],
           ],
           image: 'node:alpine',
         },
         workspacePath,
       )
 
-      // 1-127 = process failed
-      // 128+ = killed by signal (128 + signal number)
-      expect(events).toEqual([
-        jobStarted('Test Job'),
-        commandStarted('Test Job', 0),
-        commandFinished('Test Job', 0, { exitCode: 0 }),
-        commandStarted('Test Job', 1),
-        commandFinished('Test Job', 1, {
-          exitCode: 126,
-        }),
-        jobFinished('Test Job', false),
-      ])
+      expect(success).toBe(false)
+      expect(logs).toContain('first')
+      expect(logs).not.toContain('should-not-appear')
     })
   })
 
