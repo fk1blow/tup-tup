@@ -2,14 +2,11 @@ import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import type { JobDefinition } from './job.types'
 import type { LoggerFactory } from './logger'
+import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
 import type { RuntimeContext } from './runtime-context'
 
 type JobNameKey = string
 type SettledJobResult = [boolean, JobDefinition, Error?]
-
-export type PipelineSchedulerEvent =
-  | { type: 'started'; name: string }
-  | { type: 'settled'; name: string; success: boolean; error?: Error }
 
 export class PipelineScheduler {
   private runtimeCtx: RuntimeContext
