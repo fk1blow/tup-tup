@@ -1,13 +1,11 @@
+import type { Subprocess } from 'bun'
 import type { Lifecycle } from './lifecycle'
 
-export type ExecResult = {
-  stdout: ReadableStream<Uint8Array<ArrayBuffer>>
-  stderr: ReadableStream<Uint8Array<ArrayBuffer>>
-  exited: Promise<number>
-}
+export type ExecResult = Subprocess<'inherit', 'pipe', 'pipe'>
 
 export interface Executor {
   exec: (cmd: string[]) => Promise<ExecResult>
+  kill: () => Promise<void>
 }
 
 export interface ExecutorFactory {

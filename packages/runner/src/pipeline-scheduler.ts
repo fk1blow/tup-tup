@@ -13,7 +13,6 @@ export class PipelineScheduler {
   private fileLoggerFactory: LoggerFactory
   private dockerExecutorFactory: ExecutorFactory
 
-  // "settled" means finished, either succeeded or failed
   private settledJobs: Map<JobNameKey, SettledJobResult> = new Map()
   private runningJobs: Map<JobNameKey, Promise<SettledJobResult>> = new Map()
 

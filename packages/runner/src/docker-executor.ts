@@ -73,13 +73,7 @@ export class DockerExecutor implements Executor, Lifecycle {
       },
     )
 
-    const { exited, stdout, stderr } = subprocess
-
-    return {
-      exited,
-      stdout,
-      stderr,
-    }
+    return subprocess
   }
 
   async stop() {
@@ -94,6 +88,19 @@ export class DockerExecutor implements Executor, Lifecycle {
 
     // TODO could be useful to log this error output somewhere instead of just swallowing it
     // const _errorOutput = await new Response(subprocess.stderr).text()
+
+    await subprocess.exited
+  }
+
+  async kill() {
+    // Don't really know if this should throw an error if there's no container running
+    // but for now let's just make it a no-op
+    if (!this._id) return
+
+    const subprocess = Bun.spawn(['docker', 'kill', this._id], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
 
     await subprocess.exited
   }

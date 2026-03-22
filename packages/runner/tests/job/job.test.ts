@@ -10,7 +10,7 @@ import {
   filterRunningContainers,
   removeContainerByName,
 } from '../__helpers__/executor.test-helpers'
-import { runJob } from '../__helpers__/job.test-helpers'
+import { runJob, setupJob } from '../__helpers__/job.test-helpers'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
@@ -372,6 +372,57 @@ describe('Job', () => {
       const errLines = logs.filter(l => l.startsWith('err'))
       expect(outLines).toHaveLength(50)
       expect(errLines).toHaveLength(50)
+    })
+  })
+
+  describe('Abort', () => {
+    test('abort stops job mid-execution', async () => {
+      const { job, logger, teardown } = await setupJob(
+        {
+          name: 'Test Job',
+          commands: [
+            ['echo', 'first'],
+            ['sleep', '60'],
+            ['echo', 'should-not-appear'],
+          ],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
+
+      const runPromise = job.run()
+
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      await job.abort()
+
+      const [success] = await runPromise
+
+      await teardown()
+
+      expect(success).toBe(false)
+      expect(logger.logs).toContain('first')
+      expect(logger.logs).not.toContain('should-not-appear')
+    })
+
+    test('abort on completed job is a no-op', async () => {
+      const { job, logger, teardown } = await setupJob(
+        {
+          name: 'Test Job',
+          commands: [['echo', 'done']],
+          image: 'node:alpine',
+        },
+        workspacePath,
+      )
+
+      const [success] = await job.run()
+
+      await job.abort()
+
+      await teardown()
+
+      expect(success).toBe(true)
+      expect(logger.logs).toContain('done')
     })
   })
 })

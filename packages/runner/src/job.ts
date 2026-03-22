@@ -29,9 +29,9 @@ export class Job {
     let jobSucceeded = true
 
     for (const [_, command] of this.definition.commands.entries()) {
-      const runCommandResult = await this.runCommand(command)
+      const { exitCode } = await this.runCommand(command)
 
-      if (runCommandResult.exitCode > 0) {
+      if (exitCode !== null && exitCode > 0) {
         jobSucceeded = false
         break
       }
@@ -44,20 +44,18 @@ export class Job {
   }
 
   async abort() {
-    // TODO implement abort logic, e.g. kill the process running the command
+    await this.executor.kill()
   }
 
-  private async runCommand(cmd: string[]): Promise<{
-    exitCode: number
-  }> {
-    const execResult = await this.executor.exec(cmd)
+  private async runCommand(cmd: string[]) {
+    const subprocess = await this.executor.exec(cmd)
 
-    await this.logger.pipe(execResult.stdout, execResult.stderr)
-
-    const exitCode = await execResult.exited
+    await this.logger.pipe(subprocess.stdout, subprocess.stderr)
 
     // 1-127 = process faild
     // 128+ = killed by signal (128 + signal number)
-    return { exitCode }
+    await subprocess.exited
+
+    return subprocess
   }
 }

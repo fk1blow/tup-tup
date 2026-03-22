@@ -12,6 +12,7 @@ export const runJob = async (
 ): Promise<{
   logs: string[]
   jobResult: [boolean, JobDefinition]
+  job: Job
 }> => {
   const logger = new TestListLogger()
 
@@ -25,10 +26,11 @@ export const runJob = async (
   })
 
   let jobResult: [boolean, JobDefinition] | null
+  let job: Job
 
   await executor.start()
   try {
-    const job = new Job({
+    job = new Job({
       definition,
       executor,
       logger,
@@ -39,5 +41,41 @@ export const runJob = async (
     await logger.stop()
   }
 
-  return { logs: logger.logs, jobResult }
+  return { logs: logger.logs, jobResult, job }
+}
+
+/**
+ * Creates a job setup without running it, allowing manual control over the lifecycle.
+ * Call teardown() when done to clean up executor and logger.
+ */
+export const setupJob = async (
+  definition: JobDefinition,
+  workspacePath: string,
+): Promise<{
+  job: Job
+  logger: TestListLogger
+  teardown: () => Promise<void>
+}> => {
+  const logger = new TestListLogger()
+
+  const executor = new DockerExecutor({
+    pipelineName: definition.name,
+    image: definition.image,
+    workspacePath,
+  })
+
+  await executor.start()
+
+  const job = new Job({
+    definition,
+    executor,
+    logger,
+  })
+
+  const teardown = async () => {
+    await executor.stop()
+    await logger.stop()
+  }
+
+  return { job, logger, teardown }
 }
