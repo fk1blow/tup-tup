@@ -60,6 +60,7 @@ export class DockerExecutor implements Executor, Lifecycle {
 
   async exec(cmd: string[]): Promise<ExecResult> {
     if (!this._id) {
+      // TODO replace this with a more specific error type
       throw new Error('Container is not running')
     }
 

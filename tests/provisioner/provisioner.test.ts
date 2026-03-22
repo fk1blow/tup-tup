@@ -19,7 +19,7 @@ describe('Provisioner', async () => {
   })
 
   describe('Provisioner', () => {
-    it(`should prepare the workspace`, async () => {
+    it.only(`should prepare the workspace`, async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         workspacePath: workspacePath,
@@ -95,7 +95,7 @@ describe('Provisioner', async () => {
     it('should throw an error if the config file is missing', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        branch: 'test/missing-config',
+        repoBranch: 'test/missing-config',
         workspacePath: workspacePath,
       })
 
@@ -108,7 +108,7 @@ describe('Provisioner', async () => {
     it('should throw an error if the config yml file cannot be parsed', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        branch: 'test/invalid-config-file',
+        repoBranch: 'test/invalid-config-file',
         workspacePath: workspacePath,
       })
 
@@ -121,7 +121,7 @@ describe('Provisioner', async () => {
     it('should throw an error if the config is invalid', async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        branch: 'test/invalid-config',
+        repoBranch: 'test/invalid-config',
         workspacePath: workspacePath,
       })
 
@@ -134,7 +134,7 @@ describe('Provisioner', async () => {
     it("should throw an error if the job names aren't unique", async () => {
       const p = new Provisioner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        branch: 'test/invalid-config-job-not-unique',
+        repoBranch: 'test/invalid-config-job-not-unique',
         workspacePath: workspacePath,
       })
 

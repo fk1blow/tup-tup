@@ -1,0 +1,13 @@
+services:
+  runner:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistence
+      - ~/.tup-tup/runs:/app/runs
+    environment:
+      - TUP_TUP_PORT=3000
+      - TUP_TUP_RUNS_PATH=/app/runs

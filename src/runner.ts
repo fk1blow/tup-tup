@@ -1,4 +1,3 @@
-import EventEmitter from 'node:events'
 import { DockerExecutorFactory } from './docker-executor-factory'
 import { FileLoggerFactory } from './file-logger-factory'
 import { PipelineScheduler } from './pipeline-scheduler'
@@ -26,9 +25,9 @@ export class Runner {
   // TODO i don't like the name of this method, maybe `start` or `execute` would be better
   // or even `executePipeline`
   async run() {
-    const provisioner = Provisioner.create({
+    const provisioner = new Provisioner({
       repoUrl: this._repoUrl,
-      branch: this._repoBranch,
+      repoBranch: this._repoBranch,
       workspacePath: this._workspace,
     })
 
@@ -42,5 +41,7 @@ export class Runner {
       ),
     })
     // await pipelineScheduler.schedule()
+
+    // TODO add the teardown logic here
   }
 }

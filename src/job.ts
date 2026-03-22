@@ -43,6 +43,10 @@ export class Job {
     ])
   }
 
+  async abort() {
+    // TODO implement abort logic, e.g. kill the process running the command
+  }
+
   private async runCommand(cmd: string[]): Promise<{
     exitCode: number
   }> {

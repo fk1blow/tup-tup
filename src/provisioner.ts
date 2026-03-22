@@ -11,36 +11,29 @@ type IncompleteRuntimeContext = Omit<
   pipeline?: PipelineDefinition
 }
 
-// TODO need to check the job definitions cyclic dependencies here as well
+// TODO need to check the job definitions cyclic dependencies
 // use https://www.npmjs.com/package/dependency-graph
 export class Provisioner {
   private _repoUrl: string
-  private _branch?: string
-  private _workspacePath: string
-  private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
+  private _repoBranch?: string
+  // private _workspacePath: string
+  // private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
 
   constructor(opts: {
     repoUrl: string
+    repoBranch?: string
     workspacePath: string
-    branch?: string
+    dataDirPath: string
   }) {
     this._repoUrl = opts.repoUrl
-    this._branch = opts.branch
-    this._workspacePath = opts.workspacePath
+    this._repoBranch = opts.repoBranch
+    // this._workspacePath = opts.workspacePath
 
-    this._runtimeCtx = {
-      repoUrl: this._repoUrl,
-      repoBranch: this._branch,
-      workspacePath: this._workspacePath,
-    }
-  }
-
-  // Why do we need this?
-  // TODO find out why we need this static method
-  static create(
-    opts: ConstructorParameters<typeof Provisioner>[0],
-  ): Provisioner {
-    return new Provisioner(opts)
+    // this._runtimeCtx = {
+    //   repoUrl: this._repoUrl,
+    //   repoBranch: this._branch,
+    //   workspacePath: this._workspacePath,
+    // }
   }
 
   // TODO rename to `provision` or (leaning towards)`setup`()
@@ -129,8 +122,8 @@ export class Provisioner {
 
   private async cloneRepo() {
     const args = ['git', 'clone']
-    if (this._branch) {
-      args.push('--branch', this._branch)
+    if (this._repoBranch) {
+      args.push('--branch', this._repoBranch)
     }
     args.push(this._repoUrl, path.join(this._workspacePath, 'app'))
 
