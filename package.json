@@ -1,18 +1,14 @@
 {
   "name": "tup-tup",
-  "module": "index.ts",
-  "type": "module",
   "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "bun run --filter '*' test",
+    "build": "bun run --filter @tup-tup/cli build"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
     "@types/bun": "latest",
     "@types/node": "^25.3.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@sindresorhus/merge-streams": "^4.0.0",
-    "zod": "^4.3.6"
   }
 }

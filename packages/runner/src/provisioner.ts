@@ -16,24 +16,23 @@ type IncompleteRuntimeContext = Omit<
 export class Provisioner {
   private _repoUrl: string
   private _repoBranch?: string
-  // private _workspacePath: string
-  // private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
+  private _workspacePath: string
+  private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
 
   constructor(opts: {
     repoUrl: string
     repoBranch?: string
     workspacePath: string
-    dataDirPath: string
   }) {
     this._repoUrl = opts.repoUrl
     this._repoBranch = opts.repoBranch
-    // this._workspacePath = opts.workspacePath
+    this._workspacePath = opts.workspacePath
 
-    // this._runtimeCtx = {
-    //   repoUrl: this._repoUrl,
-    //   repoBranch: this._branch,
-    //   workspacePath: this._workspacePath,
-    // }
+    this._runtimeCtx = {
+      repoUrl: this._repoUrl,
+      repoBranch: this._repoBranch,
+      workspacePath: this._workspacePath,
+    }
   }
 
   // TODO rename to `provision` or (leaning towards)`setup`()

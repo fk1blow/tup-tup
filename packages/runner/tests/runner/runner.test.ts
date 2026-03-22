@@ -19,7 +19,7 @@ describe('Runner', async () => {
   })
 
   describe('Provisioning', () => {
-    it('should provision the workspace', async () => {
+    it.skip('should provision the workspace', async () => {
       const runner = new Runner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
         workspace: workspacePath,

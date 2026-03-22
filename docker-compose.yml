@@ -1,6 +1,6 @@
 services:
   runner:
-    build: .
+    build: ./packages/runner
     ports:
       - "3000:3000"
     volumes:

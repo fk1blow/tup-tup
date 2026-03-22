@@ -40,7 +40,7 @@ export class Runner {
         runtimeCtx.workspacePath,
       ),
     })
-    // await pipelineScheduler.schedule()
+    await pipelineScheduler.schedule()
 
     // TODO add the teardown logic here
   }
