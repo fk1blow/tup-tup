@@ -26,7 +26,11 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    // Types?
-    "types": ["bun-types", "@types/node"],
+    // Types
+    "types": ["@types/bun", "@types/node"],
   },
+  "references": [
+    { "path": "./packages/runner" },
+    { "path": "./packages/cli" }
+  ]
 }
