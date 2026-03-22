@@ -45,7 +45,10 @@ export class ApiClient {
     return res.json() as Promise<RunsResponse>
   }
 
-  async triggerRun(repoUrl: string, branch?: string): Promise<TriggerRunResponse> {
+  async triggerRun(
+    repoUrl: string,
+    branch?: string,
+  ): Promise<TriggerRunResponse> {
     const res = await fetch(`${this.baseUrl}/runs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,7 +63,9 @@ export class ApiClient {
   async getRunStatus(runId: string): Promise<RunResponse> {
     const res = await fetch(`${this.baseUrl}/runs/${runId}`)
     if (!res.ok) {
-      throw new Error(`Failed to get run status: ${res.status} ${res.statusText}`)
+      throw new Error(
+        `Failed to get run status: ${res.status} ${res.statusText}`,
+      )
     }
     return res.json() as Promise<RunResponse>
   }
