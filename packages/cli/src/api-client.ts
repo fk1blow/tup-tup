@@ -34,7 +34,7 @@ export class ApiClient {
     if (!res.ok) {
       throw new Error(`Health check failed: ${res.status} ${res.statusText}`)
     }
-    return res.json()
+    return res.json() as Promise<{ status: string }>
   }
 
   async listRuns(): Promise<RunsResponse> {
@@ -42,7 +42,7 @@ export class ApiClient {
     if (!res.ok) {
       throw new Error(`Failed to list runs: ${res.status} ${res.statusText}`)
     }
-    return res.json()
+    return res.json() as Promise<RunsResponse>
   }
 
   async triggerRun(repoUrl: string, branch?: string): Promise<TriggerRunResponse> {
@@ -54,7 +54,7 @@ export class ApiClient {
     if (!res.ok) {
       throw new Error(`Failed to trigger run: ${res.status} ${res.statusText}`)
     }
-    return res.json()
+    return res.json() as Promise<TriggerRunResponse>
   }
 
   async getRunStatus(runId: string): Promise<RunResponse> {
@@ -62,7 +62,7 @@ export class ApiClient {
     if (!res.ok) {
       throw new Error(`Failed to get run status: ${res.status} ${res.statusText}`)
     }
-    return res.json()
+    return res.json() as Promise<RunResponse>
   }
 
   async getJobLogs(runId: string, job: string): Promise<string> {

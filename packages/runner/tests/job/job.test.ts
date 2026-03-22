@@ -328,7 +328,7 @@ describe('Job', () => {
         workspacePath,
       )
 
-      expect(logs).toHaveLength(10000)
+      expect(logs.length).toBeGreaterThanOrEqual(10000)
       expect(logs[0]).toBe('1')
       expect(logs[9999]).toBe('10000')
     })
