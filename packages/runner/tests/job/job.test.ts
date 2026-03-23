@@ -227,7 +227,7 @@ describe('Job', () => {
     })
   })
 
-  describe('Job logging', () => {
+  describe('Logging', () => {
     test('logs stdout correctly', async () => {
       const { logs } = await runJob(
         {
@@ -315,9 +315,7 @@ describe('Job', () => {
 
       expect(logs).toEqual(['a', 'b', 'c'])
     })
-  })
 
-  describe('Logging stress', () => {
     test('large output (1000 lines)', async () => {
       const { logs } = await runJob(
         {
