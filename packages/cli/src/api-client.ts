@@ -49,6 +49,10 @@ export class ApiClient {
     repoUrl: string,
     branch?: string,
   ): Promise<TriggerRunResponse> {
+    console.log(
+      `Triggering run for repo: ${repoUrl}, branch: ${branch || 'default'}`,
+    )
+
     const res = await fetch(`${this.baseUrl}/runs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,6 +76,14 @@ export class ApiClient {
 
   async getJobLogs(runId: string, job: string): Promise<string> {
     const res = await fetch(`${this.baseUrl}/runs/${runId}/logs/${job}`)
+    if (!res.ok) {
+      throw new Error(`Failed to get logs: ${res.status} ${res.statusText}`)
+    }
+    return res.text()
+  }
+
+  async streamEventLogs(runId: string): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/runs/${runId}/tail`)
     if (!res.ok) {
       throw new Error(`Failed to get logs: ${res.status} ${res.statusText}`)
     }

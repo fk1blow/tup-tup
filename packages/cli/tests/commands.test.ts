@@ -1,15 +1,17 @@
-import { test, expect, describe } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 
 // Test that commands are properly defined by importing them directly
-import start from '../src/commands/start'
-import stop from '../src/commands/stop'
-import run from '../src/commands/run'
+import tail from 'src/commands/tail'
 import list from '../src/commands/list'
-import status from '../src/commands/status'
 import logs from '../src/commands/logs'
+import run from '../src/commands/run'
+import start from '../src/commands/start'
+import status from '../src/commands/status'
+import stop from '../src/commands/stop'
 
 // Helper to extract meta/args from citty commands (handles Resolvable type)
-const getMeta = (cmd: { meta?: unknown }) => cmd.meta as { name?: string; description?: string } | undefined
+const getMeta = (cmd: { meta?: unknown }) =>
+  cmd.meta as { name?: string; description?: string } | undefined
 const getArgs = <T>(cmd: { args?: unknown }) => cmd.args as T | undefined
 
 describe('CLI commands', () => {
@@ -30,7 +32,11 @@ describe('CLI commands', () => {
 
   test('run command has correct meta and args', () => {
     const meta = getMeta(run)
-    const args = getArgs<{ repoUrl?: unknown; branch?: unknown; url?: unknown }>(run)
+    const args = getArgs<{
+      repoUrl?: unknown
+      branch?: unknown
+      url?: unknown
+    }>(run)
     expect(meta?.name).toBe('run')
     expect(meta?.description).toContain('pipeline')
     expect(args?.repoUrl).toBeDefined()
@@ -57,11 +63,22 @@ describe('CLI commands', () => {
 
   test('logs command has correct meta and args', () => {
     const meta = getMeta(logs)
-    const args = getArgs<{ runId?: unknown; job?: unknown; url?: unknown }>(logs)
+    const args = getArgs<{ runId?: unknown; job?: unknown; url?: unknown }>(
+      logs,
+    )
     expect(meta?.name).toBe('logs')
     expect(meta?.description).toContain('logs')
     expect(args?.runId).toBeDefined()
     expect(args?.job).toBeDefined()
+    expect(args?.url).toBeDefined()
+  })
+
+  test('tail command has correct meta and args', () => {
+    const meta = getMeta(tail)
+    const args = getArgs<{ runId?: unknown; url?: unknown }>(tail)
+    expect(meta?.name).toBe('tail')
+    expect(meta?.description).toContain('Tail')
+    expect(args?.runId).toBeDefined()
     expect(args?.url).toBeDefined()
   })
 })
