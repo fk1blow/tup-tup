@@ -10,7 +10,7 @@ import {
   filterRunningContainers,
   removeContainerByName,
 } from '../__helpers__/executor.test-helpers'
-import { runJob, setupJob } from '../__helpers__/job.test-helpers'
+import { setupJob, setupJobSelfTeardown } from '../__helpers__/job.test-helpers'
 import {
   setupWorkspaceIn,
   teardownWorkspaceIn,
@@ -37,7 +37,7 @@ describe('Job', () => {
   describe('Validation', () => {
     test('rejects empty commands', async () => {
       expect(
-        runJob(
+        setupJobSelfTeardown(
           {
             name: 'Test Job',
             commands: [],
@@ -53,7 +53,7 @@ describe('Job', () => {
     test('single command success', async () => {
       const {
         jobResult: [success, jobDefinition],
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['echo', 'hello world']],
@@ -73,7 +73,7 @@ describe('Job', () => {
     test('multiple commands success', async () => {
       const {
         jobResult: [success, jobDefinition],
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -101,7 +101,7 @@ describe('Job', () => {
     test('non-zero exit code fails job', async () => {
       const {
         jobResult: [success, jobDefinition],
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['sh', '-c', 'exit 1']],
@@ -117,7 +117,7 @@ describe('Job', () => {
       const {
         jobResult: [success],
         logs,
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -138,7 +138,7 @@ describe('Job', () => {
     test('kill signal (SIGTERM) fails job', async () => {
       const {
         jobResult: [success],
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           // 1-127 = process failed
@@ -156,7 +156,7 @@ describe('Job', () => {
       const {
         jobResult: [success],
         logs,
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -181,7 +181,7 @@ describe('Job', () => {
     test('command not found', async () => {
       const {
         jobResult: [success, jobDefinition],
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           // 1-127 = process failed
@@ -199,7 +199,7 @@ describe('Job', () => {
       const {
         jobResult: [success],
         logs,
-      } = await runJob(
+      } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -229,7 +229,7 @@ describe('Job', () => {
 
   describe('Logging', () => {
     test('logs stdout correctly', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -245,7 +245,7 @@ describe('Job', () => {
     })
 
     test('logs stderr correctly', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [
@@ -261,7 +261,7 @@ describe('Job', () => {
     })
 
     test('logs stdout and stderr merged', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
@@ -278,7 +278,7 @@ describe('Job', () => {
     })
 
     test('no output produces empty logs', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['true']],
@@ -291,7 +291,7 @@ describe('Job', () => {
     })
 
     test('logs captured on failure', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['sh', '-c', 'echo "dying"; exit 1']],
@@ -304,7 +304,7 @@ describe('Job', () => {
     })
 
     test('multi-line output from single command', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['printf', 'a\\nb\\nc']],
@@ -317,7 +317,7 @@ describe('Job', () => {
     })
 
     test('large output (1000 lines)', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['seq', '1', '10000']],
@@ -332,7 +332,7 @@ describe('Job', () => {
     })
 
     test('rapid burst output', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [['sh', '-c', 'for i in $(seq 1 100); do echo $i; done']],
@@ -347,7 +347,7 @@ describe('Job', () => {
     })
 
     test('interleaved stdout and stderr under load', async () => {
-      const { logs } = await runJob(
+      const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
           commands: [

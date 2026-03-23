@@ -4,47 +4,6 @@ import { JobDefinition } from '../../src/job.types'
 import { TestListLogger } from './test-list-logger'
 
 /**
- * Runs a job with direct instantiation and returns collected events and logs.
- */
-export const runJob = async (
-  definition: JobDefinition,
-  workspacePath: string,
-): Promise<{
-  logs: string[]
-  jobResult: [boolean, JobDefinition]
-  job: Job
-}> => {
-  const logger = new TestListLogger()
-
-  // Don't like this being hardcoded, but b/c i cannot fully stub
-  // docker-executor behind a test-executor(mainly due to error being swallowed
-  // the docker runtime itself)
-  const executor = new DockerExecutor({
-    pipelineName: definition.name,
-    image: definition.image,
-    workspacePath,
-  })
-
-  let jobResult: [boolean, JobDefinition] | null
-  let job: Job
-
-  await executor.start()
-  try {
-    job = new Job({
-      definition,
-      executor,
-      logger,
-    })
-    jobResult = await job.run()
-  } finally {
-    await executor.stop()
-    await logger.stop()
-  }
-
-  return { logs: logger.logs, jobResult, job }
-}
-
-/**
  * Creates a job setup without running it, allowing manual control over the lifecycle.
  * Call teardown() when done to clean up executor and logger.
  */
@@ -78,4 +37,28 @@ export const setupJob = async (
   }
 
   return { job, logger, teardown }
+}
+
+/**
+ * Runs a job with direct instantiation and returns collected events and logs.
+ */
+export const setupJobSelfTeardown = async (
+  definition: JobDefinition,
+  workspacePath: string,
+): Promise<{
+  logs: string[]
+  jobResult: [boolean, JobDefinition]
+  job: Job
+}> => {
+  const { job, logger, teardown } = await setupJob(definition, workspacePath)
+
+  let jobResult: [boolean, JobDefinition]
+
+  try {
+    jobResult = await job.run()
+  } finally {
+    await teardown()
+  }
+
+  return { logs: logger.logs, jobResult, job }
 }
