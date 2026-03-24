@@ -50,6 +50,35 @@ const server = Bun.serve({
         })
       },
     },
+
+    '/runs/:id/events': {
+      GET: req => {
+        const stream = new ReadableStream({
+          async start(controller) {
+            const events = [
+              { type: 'run:started', runId: req.params.id },
+              { type: 'job:started', job: 'build' },
+              { type: 'job:settled', job: 'build', success: true },
+              { type: 'job:started', job: 'test' },
+              { type: 'job:settled', job: 'test', success: true },
+              { type: 'run:completed', success: true },
+            ]
+            for (const event of events) {
+              controller.enqueue(`data: ${JSON.stringify(event)}\n\n`)
+              await Bun.sleep(500)
+            }
+            controller.close()
+          },
+        })
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        })
+      },
+    },
   },
 })
 

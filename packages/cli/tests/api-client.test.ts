@@ -107,15 +107,50 @@ describe('ApiClient', () => {
     )
   })
 
-  test.only('streamEventLogs() streams event logs as text', async () => {
-    // const mockLogs = 'Line 1\nLine 2\nLine 3'
-    // setupFetch(new Response(mockLogs, { status: 200 }))
-    // const client = new ApiClient('http://localhost:3000')
-    // const result = await client.getJobLogs('123', 'build')
-    // expect(result).toBe(mockLogs)
-    // expect(mockFetch).toHaveBeenCalledWith(
-    //   'http://localhost:3000/runs/123/logs/build',
-    // )
+  test('streamEventLogs() yields SSE events', async () => {
+    const sseData =
+      'data: {"type":"job:started","job":"build"}\n\n' +
+      'data: {"type":"job:settled","job":"build","success":true}\n\n'
+
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(sseData))
+        controller.close()
+      },
+    })
+
+    setupFetch(
+      new Response(stream, {
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+    )
+
+    const client = new ApiClient('http://localhost:3000')
+    const events = []
+    for await (const event of client.streamEventLogs('123')) {
+      events.push(event)
+    }
+
+    expect(events).toEqual([
+      { type: 'job:started', job: 'build' },
+      { type: 'job:settled', job: 'build', success: true },
+    ])
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:3000/runs/123/events',
+    )
+  })
+
+  test('streamEventLogs() throws on non-ok response', async () => {
+    setupFetch(
+      new Response('', { status: 500, statusText: 'Internal Server Error' }),
+    )
+
+    const client = new ApiClient('http://localhost:3000')
+    const generator = client.streamEventLogs('123')
+
+    await expect(generator.next()).rejects.toThrow(
+      'Failed to stream: 500 Internal Server Error',
+    )
   })
 
   test('strips trailing slash from base URL', async () => {

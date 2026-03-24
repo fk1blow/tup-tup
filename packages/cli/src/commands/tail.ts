@@ -24,8 +24,9 @@ export default defineCommand({
     const client = new ApiClient(args.url)
 
     try {
-      const stream = await client.streamEventLogs(args.runId)
-      // console.log(logs)
+      for await (const event of client.streamEventLogs(args.runId)) {
+        console.log(JSON.stringify(event))
+      }
     } catch (err) {
       console.error(
         `Failed to stream logs: ${err instanceof Error ? err.message : err}`,

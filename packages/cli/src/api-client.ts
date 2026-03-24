@@ -22,6 +22,13 @@ export interface TriggerRunResponse {
   branch?: string
 }
 
+// TODO this could be shared between CLI and Runner packages
+export type PipelineEvent =
+  | { type: 'run:started'; runId: string }
+  | { type: 'job:started'; job: string }
+  | { type: 'job:settled'; job: string; success: boolean }
+  | { type: 'run:completed'; success: boolean }
+
 export class ApiClient {
   private baseUrl: string
 
@@ -82,11 +89,31 @@ export class ApiClient {
     return res.text()
   }
 
-  async streamEventLogs(runId: string): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/runs/${runId}/tail`)
+  async *streamEventLogs(runId: string): AsyncGenerator<PipelineEvent> {
+    const res = await fetch(`${this.baseUrl}/runs/${runId}/events`)
     if (!res.ok) {
-      throw new Error(`Failed to get logs: ${res.status} ${res.statusText}`)
+      throw new Error(`Failed to stream: ${res.status} ${res.statusText}`)
     }
-    return res.text()
+
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      // Split on double-newline (SSE event boundary)
+      const parts = buffer.split('\n\n')
+      buffer = parts.pop()!
+
+      for (const part of parts) {
+        if (part.startsWith('data: ')) {
+          yield JSON.parse(part.slice(6))
+        }
+      }
+    }
   }
 }
