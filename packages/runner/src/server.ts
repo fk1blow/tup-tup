@@ -53,6 +53,7 @@ const server = Bun.serve({
 
     '/runs/:id/events': {
       GET: req => {
+        // TODO read the events.log file for the run and stream it as Server-Sent Events
         const stream = new ReadableStream({
           async start(controller) {
             const events = [

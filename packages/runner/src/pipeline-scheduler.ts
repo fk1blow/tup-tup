@@ -1,7 +1,8 @@
+import path from 'path'
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import type { JobDefinition } from './job.types'
-import type { LoggerFactory } from './logger'
+import type { Logger, LoggerFactory } from './logger'
 import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
 import type { RuntimeContext } from './runtime-context'
 
@@ -10,6 +11,7 @@ type SettledJobResult = [boolean, JobDefinition, Error?]
 
 export class PipelineScheduler {
   private runtimeCtx: RuntimeContext
+  // private fileLoggerFactory: LoggerFactory
   private fileLoggerFactory: LoggerFactory
   private dockerExecutorFactory: ExecutorFactory
 
@@ -60,7 +62,9 @@ export class PipelineScheduler {
     jobDefinition: JobDefinition,
   ): Promise<[boolean, JobDefinition, Error?]> {
     const executor = this.dockerExecutorFactory.create(jobDefinition)
-    const logger = this.fileLoggerFactory.create(jobDefinition.name)
+    const logger = this.fileLoggerFactory(
+      path.join(this.runtimeCtx.logsPath, jobDefinition.name),
+    )
 
     let jobResult: [boolean, JobDefinition, Error?]
 

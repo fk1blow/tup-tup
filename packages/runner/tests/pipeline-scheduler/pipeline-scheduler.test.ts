@@ -239,7 +239,7 @@ function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
       ...ctx,
       pipeline,
     },
-    fileLoggerFactory: { create: () => new TestListLogger() },
+    fileLoggerFactory: () => new TestListLogger(),
     dockerExecutorFactory: {
       create: (opts: { image: string; name: string }) => {
         return new DockerExecutor({

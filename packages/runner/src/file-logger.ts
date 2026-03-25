@@ -4,14 +4,10 @@ import { Readable } from 'node:stream'
 import type { Logger } from './logger'
 
 export class FileLogger implements Logger {
-  private _writableStream: WritableStream<Uint8Array>
+  private _writableStream: WritableStream<Uint8Array> =
+    this.createWritableStream()
 
-  constructor(opts: { logsPath: string; jobName: string }) {
-    this._writableStream = this.createWritableStream({
-      logsPath: opts.logsPath,
-      jobName: opts.jobName,
-    })
-  }
+  constructor(private logFilePath: string) {}
 
   async pipe(...streams: ReadableStream[]): Promise<void> {
     const readableStreams = streams.map(stream => Readable.fromWeb(stream))
@@ -31,11 +27,8 @@ export class FileLogger implements Logger {
     await this._writableStream.getWriter().close()
   }
 
-  private createWritableStream(opts: {
-    logsPath: string
-    jobName: string
-  }): WritableStream<Uint8Array> {
-    const file = Bun.file(path.join(opts.logsPath, `${opts.jobName}.log`))
+  private createWritableStream(): WritableStream<Uint8Array> {
+    const file = Bun.file(path.join(`${this.logFilePath}.log`))
     const writer = file.writer()
 
     const decoder = new TextDecoder()

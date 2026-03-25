@@ -4,7 +4,4 @@ export interface Logger {
   stop(): Promise<void>
 }
 
-// TODO remove the `jobName` parameter, remove coupling
-export interface LoggerFactory {
-  create(jobName: string): Logger
-}
+export type LoggerFactory = (logFilePath: string) => Logger
