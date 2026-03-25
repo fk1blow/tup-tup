@@ -10,12 +10,12 @@ export class DockerExecutor implements Executor, Lifecycle {
 
   constructor(opts: {
     image: string
-    pipelineName: string
+    name: string
     workspacePath: string
   }) {
-    const { image, pipelineName, workspacePath } = opts
+    const { image, name, workspacePath } = opts
     this._imageName = image
-    this._containerName = `tuptup-${pipelineName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
+    this._containerName = `tuptup-${name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
     this._workspacePath = workspacePath
   }
 

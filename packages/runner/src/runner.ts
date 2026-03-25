@@ -1,5 +1,7 @@
-import { DockerExecutorFactory } from './docker-executor-factory'
+import { DockerExecutor } from './docker-executor'
+import type { ExecutorFactory, ExecutorFactoryOpts } from './executor'
 import { FileLogger } from './file-logger'
+import type { LoggerFactory } from './logger'
 import { PipelineScheduler } from './pipeline-scheduler'
 import { Provisioner } from './provisioner'
 
@@ -35,14 +37,10 @@ export class Runner {
 
     const pipelineScheduler = new PipelineScheduler({
       runtimeCtx,
-      // fileLoggerFactory: new FileLoggerFactory(),
-      fileLoggerFactory: (logFilePath: string) => new FileLogger(logFilePath),
-      // dockerExecutorFactory: new DockerExecutorFactory(
-      //   runtimeCtx.workspacePath,
-      // ),
-      dockerExecutorFactory: new DockerExecutorFactory(
-        runtimeCtx.workspacePath,
-      ),
+      fileLoggerFactory: (logFilePath: Parameters<LoggerFactory>[0]) =>
+        new FileLogger(logFilePath),
+      dockerExecutorFactory: (opts: ExecutorFactoryOpts) =>
+        new DockerExecutor(opts),
     })
     await pipelineScheduler.schedule()
 

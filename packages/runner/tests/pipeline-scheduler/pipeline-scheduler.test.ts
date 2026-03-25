@@ -240,14 +240,12 @@ function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
       pipeline,
     },
     fileLoggerFactory: () => new TestListLogger(),
-    dockerExecutorFactory: {
-      create: (opts: { image: string; name: string }) => {
-        return new DockerExecutor({
-          pipelineName: pipeline.name,
-          image: opts.image,
-          workspacePath: ctx.workspacePath,
-        })
-      },
+    dockerExecutorFactory: (opts: { image: string; name: string }) => {
+      return new DockerExecutor({
+        name: pipeline.name,
+        image: opts.image,
+        workspacePath: ctx.workspacePath,
+      })
     },
   })
 

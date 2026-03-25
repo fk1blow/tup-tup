@@ -18,7 +18,7 @@ export const setupJob = async (
   const logger = new TestListLogger()
 
   const executor = new DockerExecutor({
-    pipelineName: definition.name,
+    name: definition.name,
     image: definition.image,
     workspacePath,
   })

@@ -8,6 +8,12 @@ export interface Executor {
   kill: () => Promise<void>
 }
 
-export interface ExecutorFactory {
-  create(opts: { image: string; name: string }): Executor & Lifecycle
+export type ExecutorFactoryOpts = {
+  workspacePath: string
+  image: string
+  name: string
 }
+
+export type ExecutorFactory = (
+  opts: ExecutorFactoryOpts,
+) => Executor & Lifecycle

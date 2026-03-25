@@ -41,7 +41,7 @@ describe('Docker Executor', async () => {
   describe('Lifecycle', async () => {
     it('should create an instance', () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Test Job',
+        name: 'Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -51,7 +51,7 @@ describe('Docker Executor', async () => {
 
     it('should start container then stop it', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Start Test Job',
+        name: 'Start Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -77,7 +77,7 @@ describe('Docker Executor', async () => {
 
     it('should be able to stop a container already removed externally', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Stop Test Job',
+        name: 'Stop Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -91,7 +91,7 @@ describe('Docker Executor', async () => {
 
     it('should throw an error when starting a container with an invalid image', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Invalid Image Test Job',
+        name: 'Invalid Image Test Job',
         image: 'nonexistent:image',
         workspacePath,
       })
@@ -106,14 +106,14 @@ describe('Docker Executor', async () => {
       const spy = spyOn(Date, 'now').mockReturnValue(6666666666666)
 
       const runtime1 = new DockerExecutor({
-        pipelineName: 'Duplicate Name Test Job',
+        name: 'Duplicate Name Test Job',
         image: 'node:alpine',
         workspacePath,
       })
       await runtime1.start()
 
       const runtime2 = new DockerExecutor({
-        pipelineName: 'Duplicate Name Test Job',
+        name: 'Duplicate Name Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -142,7 +142,7 @@ describe('Docker Executor', async () => {
 
     it('should error when calling exec before starting the container', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Stop Test Job',
+        name: 'Stop Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -155,7 +155,7 @@ describe('Docker Executor', async () => {
 
     it('should error when starting a container 2 times on the same instance', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Stop Test Job',
+        name: 'Stop Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -170,7 +170,7 @@ describe('Docker Executor', async () => {
   describe('Commands', async () => {
     it('should execute a command inside the container', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Exec Command Test Job',
+        name: 'Exec Command Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -192,7 +192,7 @@ describe('Docker Executor', async () => {
 
     it('should execute multiple commands inside the container', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Exec Multiple Commands Test Job',
+        name: 'Exec Multiple Commands Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -218,7 +218,7 @@ describe('Docker Executor', async () => {
 
     it('should fail with non-zero exit code when executing an unknown command', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Exec Unknown Command Test Job',
+        name: 'Exec Unknown Command Test Job',
         image: 'node:alpine',
         workspacePath,
       })
@@ -237,7 +237,7 @@ describe('Docker Executor', async () => {
 
     it('should fail with non-zero exit code when executing an exit command', async () => {
       const runtime = new DockerExecutor({
-        pipelineName: 'Exec Unknown Command Test Job',
+        name: 'Exec Unknown Command Test Job',
         image: 'node:alpine',
         workspacePath,
       })
