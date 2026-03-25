@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 import { defineCommand, runMain } from 'citty'
 
+import events from './commands/events'
 import list from './commands/list'
 import logs from './commands/logs'
 import run from './commands/run'
 import start from './commands/start'
 import status from './commands/status'
 import stop from './commands/stop'
-import tail from './commands/tail'
 
 const main = defineCommand({
   meta: {
@@ -22,7 +22,7 @@ const main = defineCommand({
     list,
     status,
     logs,
-    tail,
+    events,
   },
 })
 

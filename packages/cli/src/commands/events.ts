@@ -4,8 +4,8 @@ import { DEFAULT_RUNNER_URL } from '../config'
 
 export default defineCommand({
   meta: {
-    name: 'tail',
-    description: 'Tail logs for a specific job in a pipeline run',
+    name: 'events',
+    description: 'Tail the events log for a specific job in a pipeline run',
   },
   args: {
     runId: {

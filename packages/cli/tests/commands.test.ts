@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 // Test that commands are properly defined by importing them directly
-import tail from 'src/commands/tail'
+import events from '../src/commands/events'
 import list from '../src/commands/list'
 import logs from '../src/commands/logs'
 import run from '../src/commands/run'
@@ -73,11 +73,13 @@ describe('CLI commands', () => {
     expect(args?.url).toBeDefined()
   })
 
-  test('tail command has correct meta and args', () => {
-    const meta = getMeta(tail)
-    const args = getArgs<{ runId?: unknown; url?: unknown }>(tail)
-    expect(meta?.name).toBe('tail')
-    expect(meta?.description).toContain('Tail')
+  test('events log has correct meta and args', () => {
+    const meta = getMeta(events)
+    const args = getArgs<{ runId?: unknown; url?: unknown }>(events)
+    expect(meta?.name).toBe('events')
+    expect(meta?.description).toContain(
+      'Tail the events log for a specific job in a pipeline run',
+    )
     expect(args?.runId).toBeDefined()
     expect(args?.url).toBeDefined()
   })
