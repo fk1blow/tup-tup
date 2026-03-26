@@ -42,14 +42,13 @@ export class PipelineScheduler {
         yield { type: 'started', name: jobName }
       }
 
-      // Have to wait for both the running jobs and the newly/next added ones
+      // Have to wait for both the (still)running jobs and the newly/next added ones
       // otherwise it simply skips the jobs that might have not settled yet(and still running)
-      const [success, jobDefinition, error] = await Promise.race([
-        ...this.runningJobs.values(),
-        ...nextRunningJobs.values(),
-      ])
-      const { name } = jobDefinition
+      const [success, jobDefinition, error] = await Promise.race(
+        this.runningJobs.values(),
+      )
 
+      const { name } = jobDefinition
       this.runningJobs.delete(name)
       this.settledJobs.set(name, [success, jobDefinition, error])
 
@@ -57,16 +56,14 @@ export class PipelineScheduler {
     }
   }
 
-  private async runJob(
-    jobDefinition: JobDefinition,
-  ): Promise<[boolean, JobDefinition, Error?]> {
+  private async runJob(job: JobDefinition): Promise<SettledJobResult> {
     const executor = this.dockerExecutorFactory({
       workspacePath: this.runtimeCtx.workspacePath,
-      image: jobDefinition.image,
-      name: jobDefinition.name,
+      image: job.image,
+      name: job.name,
     })
     const logger = this.fileLoggerFactory(
-      path.join(this.runtimeCtx.logsPath, jobDefinition.name),
+      path.join(this.runtimeCtx.logsPath, job.name),
     )
 
     let jobResult: [boolean, JobDefinition, Error?]
@@ -74,14 +71,15 @@ export class PipelineScheduler {
     try {
       await executor.start()
       jobResult = await new Job({
-        definition: jobDefinition,
+        definition: job,
         logger,
         executor,
       }).run()
     } catch (err) {
       jobResult = [
         false,
-        jobDefinition,
+        job,
+        // Dafuk is this?
         err instanceof Error
           ? err
           : new Error('Unknown pipeline schedule error'),
