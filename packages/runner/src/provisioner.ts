@@ -4,40 +4,47 @@ import path from 'path'
 import { PipelineDefinition } from './pipeline.types'
 import type { RuntimeContext } from './runtime-context'
 
-type IncompleteRuntimeContext = Omit<
-  RuntimeContext,
-  'pipeline' | 'artifactsPath' | 'logsPath' | 'repoPath' | 'appPath'
-> & {
+type BuildingRuntimeContext = {
+  id: string
+  repository: {
+    url: string
+    branch?: string
+  }
+  paths: {
+    workspace: string
+    archive?: string
+  }
   pipeline?: PipelineDefinition
 }
 
-// TODO need to check the job definitions cyclic dependencies
-// use https://www.npmjs.com/package/dependency-graph
 export class Provisioner {
-  private _repoUrl: string
-  private _repoBranch?: string
-  private _workspacePath: string
-  private _runtimeCtx: IncompleteRuntimeContext | RuntimeContext
+  private context: BuildingRuntimeContext | RuntimeContext
+
+  get id() {
+    return this.context.id
+  }
 
   constructor(opts: {
     repoUrl: string
     repoBranch?: string
-    workspacePath: string
   }) {
-    this._repoUrl = opts.repoUrl
-    this._repoBranch = opts.repoBranch
-    this._workspacePath = opts.workspacePath
+    const runId = crypto.randomUUID()
 
-    this._runtimeCtx = {
-      repoUrl: this._repoUrl,
-      repoBranch: this._repoBranch,
-      workspacePath: this._workspacePath,
+    this.context = {
+      id: runId,
+      repository: {
+        url: opts.repoUrl,
+        branch: opts.repoBranch,
+      },
+      paths: {
+        workspace: `/tmp/tuptup/${runId}`,
+      },
     }
   }
 
-  // TODO rename to `provision` or (leaning towards)`setup`()
-  async prepare(): Promise<RuntimeContext> {
+  async setup(): Promise<RuntimeContext> {
     await this.prepareWorkspace()
+    await this.prepareArchive()
     await this.cloneRepo()
     await this.parseConfig()
     // TODO implement it and use this(use https://www.npmjs.com/package/dependency-graph)
@@ -45,19 +52,20 @@ export class Provisioner {
 
     // We can safely cast the pipeline context to the complete version here
     // If any of the steps above failed, an error would have been thrown
-    return this._runtimeCtx as RuntimeContext
+    return this.context as RuntimeContext
   }
 
   private async prepareWorkspace() {
-    const appPath = path.join(this._workspacePath, 'app')
-    const artifactsPath = path.join(this._workspacePath, 'artifacts')
-    const logsPath = path.join(this._workspacePath, 'logs')
+    const { workspace } = this.context.paths
+    const appPath = path.join(workspace, 'app')
+    const artifactsPath = path.join(workspace, 'artifacts')
+    const logsPath = path.join(workspace, 'logs')
 
     try {
-      mkdirSync(appPath)
+      mkdirSync(appPath, { recursive: true })
     } catch (err) {
       throw new Error(
-        `Provisioner: Error while attempting to create repo directory at ${appPath}: ${err}`,
+        `Provisioner: Error while attempting to create workspace app directory at ${appPath}: ${err}`,
       )
     }
 
@@ -65,7 +73,7 @@ export class Provisioner {
       mkdirSync(artifactsPath)
     } catch (err) {
       throw new Error(
-        `Provisioner: Error while attempting to create artifacts directory at ${artifactsPath}: ${err}`,
+        `Provisioner: Error while attempting to create workspace artifacts directory at ${artifactsPath}: ${err}`,
       )
     }
 
@@ -73,20 +81,93 @@ export class Provisioner {
       mkdirSync(logsPath)
     } catch (err) {
       throw new Error(
-        `Provisioner: Error while attempting to create logs directory at ${logsPath}: ${err}`,
+        `Provisioner: Error while attempting to create workspace logs directory at ${logsPath}: ${err}`,
       )
     }
 
-    this._runtimeCtx = {
-      ...this._runtimeCtx,
-      artifactsPath,
-      logsPath,
-      appPath,
+    this.context = {
+      ...this.context,
+      paths: {
+        workspace: this.context.paths.workspace,
+      },
     }
   }
 
+  private async prepareArchive() {
+    const archiveRoot =
+      Bun.env.TUP_TUP_RUNS_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
+    const archivePath = path.join(archiveRoot, this.context.id)
+
+    try {
+      mkdirSync(archivePath, { recursive: true })
+    } catch (err) {
+      throw new Error(
+        `Provisioner: Error while attempting to create archive artifacts directory at ${archivePath}: ${err}`,
+      )
+    }
+
+    const artifactsPath = path.join(archivePath, 'artifacts')
+    const logsPath = path.join(archivePath, 'logs')
+
+    try {
+      mkdirSync(artifactsPath)
+    } catch (err) {
+      throw new Error(
+        `Provisioner: Error while attempting to create archive artifacts directory at ${artifactsPath}: ${err}`,
+      )
+    }
+
+    try {
+      mkdirSync(logsPath)
+    } catch (err) {
+      throw new Error(
+        `Provisioner: Error while attempting to create archive logs directory at ${logsPath}: ${err}`,
+      )
+    }
+
+    this.context = {
+      ...this.context,
+      paths: {
+        ...this.context.paths,
+        archive: archivePath,
+      },
+    }
+  }
+
+  private async cloneRepo() {
+    const args = ['git', 'clone']
+    // clone what branch
+    if (this.context.repository.branch) {
+      args.push('--branch', this.context.repository.branch)
+    }
+    // clone where
+    args.push(
+      this.context.repository.url,
+      path.join(this.context.paths.workspace, 'app'),
+    )
+
+    const subprocess = Bun.spawn(args, {
+      stdout: 'ignore',
+      stderr: 'ignore',
+    })
+
+    const exitCode = await subprocess.exited
+
+    if (exitCode !== 0) {
+      throw new Error(
+        `Provisioner: Failed to clone repository from ${this.context.repository.url} with exit code ${exitCode}`,
+      )
+    }
+
+    return exitCode
+  }
+
   private async parseConfig() {
-    const configPath = path.join(this._workspacePath, 'app', '.tuptup.yml')
+    const configPath = path.join(
+      this.context.paths.workspace,
+      'app',
+      '.tuptup.yml',
+    )
 
     try {
       statSync(configPath)
@@ -113,32 +194,9 @@ export class Provisioner {
         `Provisioner: Invalid pipeline configuration ${JSON.stringify(configValidation.error.issues)}`,
       )
 
-    this._runtimeCtx = {
-      ...this._runtimeCtx,
+    this.context = {
+      ...this.context,
       pipeline: configValidation.data,
     }
-  }
-
-  private async cloneRepo() {
-    const args = ['git', 'clone']
-    if (this._repoBranch) {
-      args.push('--branch', this._repoBranch)
-    }
-    args.push(this._repoUrl, path.join(this._workspacePath, 'app'))
-
-    const subprocess = Bun.spawn(args, {
-      stdout: 'ignore',
-      stderr: 'ignore',
-    })
-
-    const exitCode = await subprocess.exited
-
-    if (exitCode !== 0) {
-      throw new Error(
-        `Provisioner: Failed to clone repository from ${this._repoUrl} with exit code ${exitCode}`,
-      )
-    }
-
-    return exitCode
   }
 }

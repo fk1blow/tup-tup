@@ -1,35 +1,38 @@
 import type { PipelineDefinition } from './pipeline.types'
 
 /**
- * The RuntimeContext is the main source of truth for all the
- * information related to the pipeline execution.
- * It is created by the Provisioner and consumed by the Runner and the PipelineScheduler.
+ * RuntimeContext is the single source of truth for pipeline execution.
+ * Created by Provisioner, consumed by Runner, Scheduler, and jobs.
  *
- * @property repoUrl - The URL of the repository to clone
- * @property repoBranch - The branch to clone (optional, defaults to default branch)
- * @property workspacePath - Root directory for pipeline execution (contains repo, logs, artifacts)
- * @property artifactsPath - Directory where pipeline artifacts are stored
- * @property logsPath - Directory where pipeline logs are stored
- * @property appPath - Directory containing the cloned application code
- * @property pipeline - The pipeline definition with jobs and dependencies
+ * Paths:
+ * - workspace: Ephemeral scratch space of a run(eg: cloned repo; deleted after teardown)
+ * - archive: Persistent storage for this run's outputs (logs, artifacts, events)
  *
- * @example
- * {
- *   repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
- *   repoBranch: 'main',
- *   workspacePath: '/workspace-bdc620cc',
- *   artifactsPath: '/workspace-bdc620cc/artifacts',
- *   logsPath: '/workspace-bdc620cc/logs',
- *   appPath: '/workspace-bdc620cc/app',
- *   pipeline: { name: 'my-pipeline', jobs: [...] },
- * }
+ * Both paths share a conventional structure:
+ *   /app        - cloned repository (workspace only)
+ *   /logs       - job output logs
+ *   /artifacts  - generated artifacts
+ *   events.log  - structured event stream
+ *
+ * Consumers should never read env vars or construct paths — everything
+ * needed is already here.
  */
 export interface RuntimeContext {
-  repoUrl: string
-  repoBranch?: string
+  // repoUrl: string
+  // repoBranch?: string
+  // pipeline: PipelineDefinition
+  // workspacePath: string
+  // artifactsPath: string
+  // logsPath: string
+  // appPath: string
+  id: string
   pipeline: PipelineDefinition
-  workspacePath: string
-  artifactsPath: string
-  logsPath: string
-  appPath: string
+  repository: {
+    url: string
+    branch?: string
+  }
+  paths: {
+    workspace: string
+    archive: string
+  }
 }
