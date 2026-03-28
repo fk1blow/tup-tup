@@ -9,7 +9,7 @@ export function setupWorkspaceIn(workingDir: string) {
   // Need to create a unique workspace directory for each test to ensure isolation and avoid conflicts between tests.
   // This might come from the system's, from an .env file or from the CLI args in a real scenario
   const workspacePath = path.resolve(
-    path.join(workingDir, `./workspace-${crypto.randomUUID()}`),
+    path.join(workingDir, `./${crypto.randomUUID()}`),
   )
 
   mkdirSync(workspacePath, { recursive: true })

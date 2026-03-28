@@ -2,28 +2,33 @@ import path from 'path'
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import type { JobDefinition } from './job.types'
-import type { LoggerFactory } from './logger'
+import type { JobsLogger } from './jobs-logger'
 import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
 import type { RuntimeContext } from './runtime-context'
 
 type JobNameKey = string
 type SettledJobResult = [boolean, JobDefinition, Error?]
+type PipelineSchedulerOpts = {
+  runtimeCtx: RuntimeContext
+  jobsLoggerFactory: (logFilePath: string) => JobsLogger
+  dockerExecutorFactory: ExecutorFactory<{
+    workspacePath: string
+    image: string
+    name: string
+  }>
+}
 
 export class PipelineScheduler {
   private runtimeCtx: RuntimeContext
-  private fileLoggerFactory: LoggerFactory
-  private dockerExecutorFactory: ExecutorFactory
+  private jobsLoggerFactory: PipelineSchedulerOpts['jobsLoggerFactory']
+  private dockerExecutorFactory: PipelineSchedulerOpts['dockerExecutorFactory']
 
   private settledJobs: Map<JobNameKey, SettledJobResult> = new Map()
   private runningJobs: Map<JobNameKey, Promise<SettledJobResult>> = new Map()
 
-  constructor(opts: {
-    runtimeCtx: RuntimeContext
-    fileLoggerFactory: LoggerFactory
-    dockerExecutorFactory: ExecutorFactory
-  }) {
+  constructor(opts: PipelineSchedulerOpts) {
     this.runtimeCtx = opts.runtimeCtx
-    this.fileLoggerFactory = opts.fileLoggerFactory
+    this.jobsLoggerFactory = opts.jobsLoggerFactory
     this.dockerExecutorFactory = opts.dockerExecutorFactory
   }
 
@@ -62,7 +67,7 @@ export class PipelineScheduler {
       image: job.image,
       name: job.name,
     })
-    const logger = this.fileLoggerFactory(
+    const logger = this.jobsLoggerFactory(
       path.join(this.runtimeCtx.logsPath, job.name),
     )
 
@@ -86,7 +91,7 @@ export class PipelineScheduler {
       ]
     } finally {
       await executor.stop()
-      await logger.stop()
+      await logger.close()
     }
 
     return jobResult

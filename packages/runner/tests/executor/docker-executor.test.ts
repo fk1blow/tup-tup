@@ -225,11 +225,12 @@ describe('Docker Executor', async () => {
 
       await runtime.start()
 
-      const { stdout, exited } = await runtime.exec(['nonexistent-command-xyz'])
+      const { stdout, exitCode } = await runtime.exec([
+        'nonexistent-command-xyz',
+      ])
       const stdoutText = await new Response(stdout).text()
-      const exitCode = await exited
 
-      expect(exitCode).not.toBe(0)
+      expect(exitCode).resolves.toBeGreaterThan(0)
       expect(stdoutText.trim()).toMatch(/OCI runtime exec failed: exec failed/)
 
       await runtime.stop()
@@ -244,11 +245,11 @@ describe('Docker Executor', async () => {
 
       await runtime.start()
 
-      const { stdout, exited } = await runtime.exec(['sh', '-c', 'exit 42'])
+      const { stdout, exitCode } = await runtime.exec(['sh', '-c', 'exit 42'])
       const stdoutText = await new Response(stdout).text()
-      const exitCode = await exited
+      // const exitCode = await exited
 
-      expect(exitCode).toBe(42)
+      expect(exitCode).resolves.toBe(42)
       expect(stdoutText.trim()).toHaveLength(0)
 
       await runtime.stop()

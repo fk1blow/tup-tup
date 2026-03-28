@@ -1,13 +1,13 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import path from 'node:path'
 import { Readable } from 'node:stream'
-import type { Logger } from './logger'
 
-export class FileLogger implements Logger {
-  private _writableStream: WritableStream<Uint8Array> =
-    this.createWritableStream()
+export class JobsLogger {
+  private _writableStream: WritableStream<Uint8Array>
 
-  constructor(private logFilePath: string) {}
+  constructor(private logFilePath: string) {
+    this._writableStream = this.createWritableStream()
+  }
 
   async pipe(...streams: ReadableStream[]): Promise<void> {
     const readableStreams = streams.map(stream => Readable.fromWeb(stream))
@@ -23,7 +23,7 @@ export class FileLogger implements Logger {
     })
   }
 
-  async stop(): Promise<void> {
+  async close(): Promise<void> {
     await this._writableStream.getWriter().close()
   }
 

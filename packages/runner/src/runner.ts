@@ -1,7 +1,7 @@
+import path from 'node:path'
 import { DockerExecutor } from './docker-executor'
-import type { ExecutorFactory, ExecutorFactoryOpts } from './executor'
-import { FileLogger } from './file-logger'
-import type { LoggerFactory } from './logger'
+import { EventsLogger } from './events-logger'
+import { JobsLogger } from './jobs-logger'
 import { PipelineScheduler } from './pipeline-scheduler'
 import { Provisioner } from './provisioner'
 
@@ -12,6 +12,7 @@ export class Runner {
   private _workspace: string
   private _repoUrl: string
   private _repoBranch?: string
+  // private _eventsLogger: Logger
 
   constructor(opts: {
     repoUrl: string
@@ -22,11 +23,12 @@ export class Runner {
     this._workspace = opts.workspace
     this._repoUrl = opts.repoUrl
     this._repoBranch = opts.repoBranch
+    // this._eventsLogger = new FileLogger(
+    //   path.join(this._workspace, 'events.log'),
+    // )
   }
 
-  // TODO i don't like the name of this method, maybe `start` or `execute` would be better
-  // or even `executePipeline`
-  async run() {
+  async start() {
     const provisioner = new Provisioner({
       repoUrl: this._repoUrl,
       repoBranch: this._repoBranch,
@@ -37,13 +39,24 @@ export class Runner {
 
     const pipelineScheduler = new PipelineScheduler({
       runtimeCtx,
-      fileLoggerFactory: (logFilePath: Parameters<LoggerFactory>[0]) =>
-        new FileLogger(logFilePath),
-      dockerExecutorFactory: (opts: ExecutorFactoryOpts) =>
-        new DockerExecutor(opts),
+      jobsLoggerFactory: (logFilePath: string) => new JobsLogger(logFilePath),
+      dockerExecutorFactory: (opts: {
+        workspacePath: string
+        image: string
+        name: string
+      }) => new DockerExecutor(opts),
     })
-    await pipelineScheduler.schedule()
+
+    const eventsLogger = new EventsLogger(path.join(this._workspace, 'events'))
+
+    for await (const event of pipelineScheduler.schedule()) {
+      await eventsLogger.log(event)
+    }
 
     // TODO add the teardown logic here
+  }
+
+  private async teardown() {
+    // TODO add the teardown logic here, like removing the workspace and all the logs/artifacts
   }
 }

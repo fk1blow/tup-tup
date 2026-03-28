@@ -1,8 +1,7 @@
 import mergeStreams from '@sindresorhus/merge-streams'
 import { Readable } from 'node:stream'
-import type { Logger } from '../../src/logger'
 
-export class TestListLogger implements Logger {
+export class TestListLogger {
   public logs: string[] = []
   private logStream: WritableStream<Uint8Array>
 

@@ -179,7 +179,7 @@ describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
     ])
   })
 
-  it.only('should see errors???', async () => {
+  it('should see errors???', async () => {
     const coordinator = setupCoordinator(ctx, {
       name: 'my-pipeline',
       jobs: [
@@ -239,7 +239,7 @@ function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
       ...ctx,
       pipeline,
     },
-    fileLoggerFactory: () => new TestListLogger(),
+    jobsLoggerFactory: () => new TestListLogger(),
     dockerExecutorFactory: (opts: { image: string; name: string }) => {
       return new DockerExecutor({
         name: pipeline.name,

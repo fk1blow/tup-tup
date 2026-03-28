@@ -73,7 +73,11 @@ export class DockerExecutor implements Executor, Lifecycle {
       },
     )
 
-    return subprocess
+    return {
+      stdout: subprocess.stdout,
+      stderr: subprocess.stderr,
+      exitCode: subprocess.exited,
+    }
   }
 
   async stop() {

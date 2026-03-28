@@ -11,7 +11,7 @@ describe('Provisioner', async () => {
   let workspacePath: string
 
   beforeEach(() => {
-    workspacePath = setupWorkspaceIn('./tests/provisioner')
+    workspacePath = setupWorkspaceIn('./tmp/provisioner')
   })
 
   afterEach(() => {
@@ -145,7 +145,7 @@ describe('Provisioner', async () => {
     })
 
     // TODO
-    it("should throw an error if the job dependencies don't exist", async () => {
+    it.skip("should throw an error if the job dependencies don't exist", async () => {
       // const p = new Provisioner({
       //   repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       //   branch: 'test/invalid-config-job-not-unique',
