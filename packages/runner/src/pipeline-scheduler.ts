@@ -2,8 +2,10 @@ import path from 'path'
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import type { JobDefinition } from './job.types'
-import type { JobsLogger } from './jobs-logger'
-import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
+import {
+  PipelineSchedulerEventType,
+  type PipelineSchedulerEvent,
+} from './pipeline-scheduler.types'
 import type { RuntimeContext } from './runtime-context'
 
 type JobNameKey = string
@@ -48,7 +50,7 @@ export class PipelineScheduler {
       for (const [jobName, promise] of nextRunningJobs) {
         this.runningJobs.set(jobName, promise)
         yield {
-          type: 'job:started',
+          type: PipelineSchedulerEventType.JOB_STARTED,
           pipeline: this.runtimeCtx.pipeline.name,
           job: jobName,
         }
@@ -65,7 +67,7 @@ export class PipelineScheduler {
       this.settledJobs.set(name, [success, jobDefinition, error])
 
       yield {
-        type: 'job:settled',
+        type: PipelineSchedulerEventType.JOB_SETTLED,
         pipeline: this.runtimeCtx.pipeline.name,
         job: name,
         success,
@@ -89,7 +91,17 @@ export class PipelineScheduler {
       executor,
     })
 
-    await executor.start()
+    try {
+      await executor.start()
+    } catch (error) {
+      await logger.close()
+      return [
+        false,
+        definition,
+        error instanceof Error ? error : new Error(String(error)),
+      ]
+    }
+
     const jobRun = job.run()
 
     const { timer: jobTimeout, stop: stopTimer } = this.createTimer(
