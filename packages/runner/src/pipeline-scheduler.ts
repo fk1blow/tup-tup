@@ -41,25 +41,8 @@ export class PipelineScheduler {
       // No more ready jobs and no more running jobs, we are done
       if (readyJobs.length === 0 && this.runningJobs.size === 0) break
 
-      // Build the next set of running jobs
-      // const nextRunningJobs = new Map(
-      //   readyJobs.map(job => [job.name, this.runJob(job)]),
-      // )
       const nextRunningJobs = new Map(
-        readyJobs.map((job: JobDefinition) => [
-          job.name,
-          // Promise.race([
-          //   this.runJob(job).then(result => result),
-          //   new Promise<SettledJobResult>(resolve =>
-          //     // TODO need the job instance so i can call `abort()` on it when it times out
-          //     // TODO need to handle the case when the job finishes before the timeout and not call `abort()`
-          //     setTimeout(() => {
-          //       resolve([false, job, new Error('Job execution timed out')])
-          //     }, 1000),
-          //   ),
-          // ]),
-          this.runJob(job),
-        ]),
+        readyJobs.map((job: JobDefinition) => [job.name, this.runJob(job)]),
       )
 
       for (const [jobName, promise] of nextRunningJobs) {
@@ -113,9 +96,7 @@ export class PipelineScheduler {
       definition.timeout ?? 1000 * 60 * 30,
     )
 
-    const timeoutRace:
-      | { type: 'runJob'; result: [boolean, JobDefinition] }
-      | { type: 'timeout' } = await Promise.race([
+    const timeoutRace = await Promise.race([
       jobRun.then(result => ({ type: 'runJob', result }) as const),
       jobTimeout.then(() => ({ type: 'timeout' }) as const),
     ])
