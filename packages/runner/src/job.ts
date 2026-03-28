@@ -5,12 +5,18 @@ import type { JobsLogger } from './jobs-logger'
 
 export class Job {
   private definition: JobDefinition
-  private logger: JobsLogger
   private executor: Executor
+  private logger: {
+    pipe: (...streams: ReadableStream[]) => Promise<void>
+    close: () => Promise<void>
+  }
 
   constructor(opts: {
     definition: JobDefinition
-    logger: JobsLogger
+    logger: {
+      pipe: (...streams: ReadableStream[]) => Promise<void>
+      close: () => Promise<void>
+    }
     executor: Executor
   }) {
     const { definition, logger, executor } = opts
@@ -43,8 +49,6 @@ export class Job {
     ])
   }
 
-  // Would be called when a job has timed out or when the runner receives a shutdown signal
-  // TODO do i really want this here?
   async abort() {
     await this.executor.kill()
   }

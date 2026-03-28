@@ -10,7 +10,10 @@ type JobNameKey = string
 type SettledJobResult = [boolean, JobDefinition, Error?]
 type PipelineSchedulerOpts = {
   runtimeCtx: RuntimeContext
-  jobsLoggerFactory: (logFilePath: string) => JobsLogger
+  jobsLoggerFactory: (logFilePath: string) => {
+    pipe: (...streams: ReadableStream[]) => Promise<void>
+    close: () => Promise<void>
+  }
   dockerExecutorFactory: ExecutorFactory<{
     workspacePath: string
     image: string
@@ -35,16 +38,37 @@ export class PipelineScheduler {
   async *schedule(): AsyncGenerator<PipelineSchedulerEvent> {
     while (true) {
       const readyJobs = this.getReadyJobs()
+      // No more ready jobs and no more running jobs, we are done
       if (readyJobs.length === 0 && this.runningJobs.size === 0) break
 
       // Build the next set of running jobs
+      // const nextRunningJobs = new Map(
+      //   readyJobs.map(job => [job.name, this.runJob(job)]),
+      // )
       const nextRunningJobs = new Map(
-        readyJobs.map(job => [job.name, this.runJob(job)]),
+        readyJobs.map((job: JobDefinition) => [
+          job.name,
+          // Promise.race([
+          //   this.runJob(job).then(result => result),
+          //   new Promise<SettledJobResult>(resolve =>
+          //     // TODO need the job instance so i can call `abort()` on it when it times out
+          //     // TODO need to handle the case when the job finishes before the timeout and not call `abort()`
+          //     setTimeout(() => {
+          //       resolve([false, job, new Error('Job execution timed out')])
+          //     }, 1000),
+          //   ),
+          // ]),
+          this.runJob(job),
+        ]),
       )
 
       for (const [jobName, promise] of nextRunningJobs) {
         this.runningJobs.set(jobName, promise)
-        yield { type: 'started', name: jobName }
+        yield {
+          type: 'job:started',
+          pipeline: this.runtimeCtx.pipeline.name,
+          job: jobName,
+        }
       }
 
       // Have to wait for both the (still)running jobs and the newly/next added ones
@@ -57,44 +81,59 @@ export class PipelineScheduler {
       this.runningJobs.delete(name)
       this.settledJobs.set(name, [success, jobDefinition, error])
 
-      yield { type: 'settled', name, success, error }
+      yield {
+        type: 'job:settled',
+        pipeline: this.runtimeCtx.pipeline.name,
+        job: name,
+        success,
+        error,
+      }
     }
   }
 
-  private async runJob(job: JobDefinition): Promise<SettledJobResult> {
+  private async runJob(definition: JobDefinition): Promise<SettledJobResult> {
     const executor = this.dockerExecutorFactory({
       workspacePath: this.runtimeCtx.workspacePath,
-      image: job.image,
-      name: job.name,
+      image: definition.image,
+      name: definition.name,
     })
     const logger = this.jobsLoggerFactory(
-      path.join(this.runtimeCtx.logsPath, job.name),
+      path.join(this.runtimeCtx.logsPath, definition.name),
+    )
+    const job = new Job({
+      definition,
+      logger,
+      executor,
+    })
+
+    await executor.start()
+    const jobRun = job.run()
+
+    const { timer: jobTimeout, stop: stopTimer } = this.createTimer(
+      definition.timeout ?? 1000 * 60 * 30,
     )
 
-    let jobResult: [boolean, JobDefinition, Error?]
+    const timeoutRace:
+      | { type: 'runJob'; result: [boolean, JobDefinition] }
+      | { type: 'timeout' } = await Promise.race([
+      jobRun.then(result => ({ type: 'runJob', result }) as const),
+      jobTimeout.then(() => ({ type: 'timeout' }) as const),
+    ])
 
-    try {
-      await executor.start()
-      jobResult = await new Job({
-        definition: job,
-        logger,
-        executor,
-      }).run()
-    } catch (err) {
-      jobResult = [
-        false,
-        job,
-        // Dafuk is this?
-        err instanceof Error
-          ? err
-          : new Error('Unknown pipeline schedule error'),
-      ]
-    } finally {
-      await executor.stop()
-      await logger.close()
+    let result: SettledJobResult
+
+    if (timeoutRace.type === 'runJob') {
+      stopTimer()
+      result = timeoutRace.result
+    } else {
+      await job.abort()
+      result = [false, definition, new Error('Job execution timed out')]
     }
 
-    return jobResult
+    await executor.stop()
+    await logger.close()
+
+    return result
   }
 
   private getReadyJobs(): JobDefinition[] {
@@ -112,5 +151,15 @@ export class PipelineScheduler {
         dep => this.settledJobs.get(dep)?.at(0) === true,
       )
     })
+  }
+
+  private createTimer(ms: number) {
+    let timerId: Timer
+    const timer = new Promise<void>(
+      resolve => (timerId = setTimeout(resolve, ms)),
+    )
+    const stop = () => clearTimeout(timerId!)
+
+    return { stop, timer }
   }
 }

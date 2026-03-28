@@ -49,9 +49,23 @@ export class Runner {
 
     const eventsLogger = new EventsLogger(path.join(this._workspace, 'events'))
 
+    eventsLogger.log({
+      type: 'run:started',
+      pipeline: runtimeCtx.pipeline.name,
+    })
+
+    // TODO wrap in try/catch
     for await (const event of pipelineScheduler.schedule()) {
       await eventsLogger.log(event)
     }
+
+    // TODO this should come after the teardown
+    eventsLogger.log({
+      type: 'run:finished',
+      pipeline: runtimeCtx.pipeline.name,
+    })
+
+    eventsLogger.close()
 
     // TODO add the teardown logic here
   }

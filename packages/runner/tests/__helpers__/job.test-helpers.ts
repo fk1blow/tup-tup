@@ -33,7 +33,7 @@ export const setupJob = async (
 
   const teardown = async () => {
     await executor.stop()
-    await logger.stop()
+    await logger.close()
   }
 
   return { job, logger, teardown }

@@ -29,7 +29,7 @@ export class TestListLogger {
     await mergedStream.pipeTo(this.logStream, { preventClose: true })
   }
 
-  async stop() {
+  async close() {
     await this.logStream.getWriter().close()
   }
 }

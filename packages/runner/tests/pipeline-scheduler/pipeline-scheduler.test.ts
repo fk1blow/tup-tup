@@ -10,8 +10,6 @@ import {
 
 describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
   it('should handle a simple parallel job pipeline', async () => {
-    console.time('------------')
-
     const coordinator = setupCoordinator(ctx, {
       name: 'my-pipeline',
       jobs: [
@@ -107,41 +105,41 @@ describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
     expect(allButLastTwo).toEqual([
       {
         type: 'started',
-        name: 'job_c',
+        job: 'job_c',
       },
       {
         type: 'settled',
-        name: 'job_c',
+        job: 'job_c',
         success: true,
         error: undefined,
       },
       {
         type: 'started',
-        name: 'job_a',
+        job: 'job_a',
       },
       {
         type: 'settled',
-        name: 'job_a',
+        job: 'job_a',
         success: true,
         error: undefined,
       },
       {
         type: 'started',
-        name: 'job_b',
+        job: 'job_b',
       },
       {
         type: 'started',
-        name: 'job_d',
+        job: 'job_d',
       },
     ])
 
     // Last two jobs can be in any order since they run in parallel
     expect(lastTwo).toHaveLength(2)
-    expect(lastTwo.map(e => e.name).sort()).toEqual(['job_b', 'job_d'])
+    expect(lastTwo.map(e => e.job).sort()).toEqual(['job_b', 'job_d'])
   })
 
   it('should skip following jobs after a dependant failed', async () => {
-    const coordinator = setupCoordinator(ctx, {
+    const { coordinator } = setupCoordinator(ctx, {
       name: 'my-pipeline',
       jobs: [
         {
@@ -167,14 +165,59 @@ describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
 
     expect(events).toMatchObject([
       {
-        type: 'started',
-        name: 'job_a',
+        type: 'job:started',
+        pipeline: 'my-pipeline',
+        job: 'job_a',
       },
       {
-        type: 'settled',
-        name: 'job_a',
+        type: 'job:settled',
+        pipeline: 'my-pipeline',
+        job: 'job_a',
         success: false,
         error: undefined,
+      },
+    ])
+  })
+
+  it.only('should handle a job timing out', async () => {
+    const { coordinator, jobsLogger } = setupCoordinator(ctx, {
+      name: 'my-pipeline',
+      jobs: [
+        {
+          name: 'job_a',
+          image: 'busybox',
+          commands: [
+            ['echo', 'first command'],
+            ['sh', '-c', 'sleep 5'],
+          ],
+          timeout: 1000, // 1 second timeout
+        },
+      ],
+    })
+
+    const events = []
+
+    for await (const event of coordinator.schedule()) {
+      events.push(event)
+    }
+
+    console.log('events:', events)
+    // console.log('jobsLogger:', jobsLogger.logs)
+
+    expect(events).toMatchObject([
+      {
+        type: 'job:started',
+        pipeline: 'my-pipeline',
+        job: 'job_a',
+      },
+      {
+        type: 'job:settled',
+        pipeline: 'my-pipeline',
+        job: 'job_a',
+        success: false,
+        error: expect.objectContaining({
+          message: expect.stringContaining('Job execution timed out'),
+        }),
       },
     ])
   })
@@ -234,12 +277,13 @@ describeWithWorkspace('Pipline Scheduler', './tests/runner', ctx => {
 })
 
 function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
+  const jobsLogger = new TestListLogger()
   const coordinator = new PipelineScheduler({
     runtimeCtx: {
       ...ctx,
       pipeline,
     },
-    jobsLoggerFactory: () => new TestListLogger(),
+    jobsLoggerFactory: () => jobsLogger,
     dockerExecutorFactory: (opts: { image: string; name: string }) => {
       return new DockerExecutor({
         name: pipeline.name,
@@ -249,5 +293,5 @@ function setupCoordinator(ctx: WorkspaceContext, pipeline: PipelineDefinition) {
     },
   })
 
-  return coordinator
+  return { coordinator, jobsLogger }
 }

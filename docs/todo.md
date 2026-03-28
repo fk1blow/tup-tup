@@ -1,9 +1,10 @@
 # TODO
-- [ ] refactor logger, executor interfaces
+- [x] refactor logger, executor interfaces
 - [ ] pipeline scheduler job timeout
 - [ ] runner container and communication
 - [ ] restricty containers with [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
 - [ ] system logs (see phases below)
+  - might have to rethink this
 - [ ] handle multiple runners(TBD)
 
 ## refactor logger, executor interfaces
@@ -18,6 +19,20 @@ __see TODOs inside file file-logger.ts, executor.ts__
 - ExecutorFactory<TOpts> — generic over options
 
 ## pipeline scheduler job timeout
+Could use the same aproach as the running jobs: have a race between the job's promise
+and a timeout.
+
+### Failure continuation (two orthogonal decisions)
+When a job fails (including timeout):
+
+1. **Dependency continuation** — can jobs that depend on the failed job still run?
+2. **Pipeline continuation** — can unrelated jobs (no dependency) continue?
+
+Naming options:
+- `allowFailure` / `continueOnError` — on the failing job ("my failure shouldn't block others")
+- `runOnFailure` / `when: always` — on the dependent job ("run me regardless of upstream status")
+
+TBD: which perspective feels more natural for pipeline definitions?
 
 ## handle multiple runners
 This thing could be a queue of runners, TBD

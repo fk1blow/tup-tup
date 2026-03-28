@@ -12,6 +12,7 @@ export const JobDefinition = z.object({
   image: z.string().min(1, 'Docker image name is required'),
   allowFailure: z.boolean().optional(),
   dependsOn: z.array(z.string()).optional(),
+  timeout: z.number().optional(),
 })
 
 export type JobDefinition = z.infer<typeof JobDefinition>

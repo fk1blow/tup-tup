@@ -6,7 +6,7 @@ export class DockerExecutor implements Executor, Lifecycle {
   private _imageName: string
   private _containerName: string
   private _workspacePath: string
-  private _id: string | null = null
+  private _containerId: string | null = null
 
   constructor(opts: {
     image: string
@@ -24,7 +24,7 @@ export class DockerExecutor implements Executor, Lifecycle {
   }
 
   get containerId() {
-    return this._id
+    return this._containerId
   }
 
   async start() {
@@ -48,7 +48,7 @@ export class DockerExecutor implements Executor, Lifecycle {
     const stderrText = await new Response(subprocess.stderr).text()
 
     if (stdoutText.trim()) {
-      this._id = stdoutText.trim()
+      this._containerId = stdoutText.trim()
     }
 
     const exitCode = await subprocess.exited
@@ -59,13 +59,13 @@ export class DockerExecutor implements Executor, Lifecycle {
   }
 
   async exec(cmd: string[]): Promise<ExecResult> {
-    if (!this._id) {
+    if (!this._containerId) {
       // TODO replace this with a more specific error type
       throw new Error('Container is not running')
     }
 
     const subprocess: Subprocess<'inherit', 'pipe', 'pipe'> = Bun.spawn(
-      ['docker', 'exec', this._id, ...cmd],
+      ['docker', 'exec', this._containerId, ...cmd],
       {
         stdin: 'inherit',
         stdout: 'pipe',
@@ -81,14 +81,14 @@ export class DockerExecutor implements Executor, Lifecycle {
   }
 
   async stop() {
-    if (!this._id) return
+    if (!this._containerId) return
 
-    const subprocess = Bun.spawn(['docker', 'rm', '-f', this._id], {
+    const subprocess = Bun.spawn(['docker', 'rm', '-f', this._containerId], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
 
-    this._id = null
+    this._containerId = null
 
     // TODO could be useful to log this error output somewhere instead of just swallowing it
     // const _errorOutput = await new Response(subprocess.stderr).text()
@@ -99,11 +99,11 @@ export class DockerExecutor implements Executor, Lifecycle {
   async kill() {
     // Don't really know if this should throw an error if there's no container running
     // but for now let's just make it a no-op
-    if (!this._id) return
+    if (!this._containerId) return
 
-    const subprocess = Bun.spawn(['docker', 'kill', this._id], {
-      stdout: 'pipe',
-      stderr: 'pipe',
+    const subprocess = Bun.spawn(['docker', 'kill', this._containerId], {
+      stdout: 'inherit',
+      stderr: 'inherit',
     })
 
     await subprocess.exited
