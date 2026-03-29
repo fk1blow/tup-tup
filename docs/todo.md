@@ -39,6 +39,28 @@ TBD: which perspective feels more natural for pipeline definitions?
 Should define what does the teardown involves, what needs to be done after the scheduler finishes.
 Might also look at the test files to see what's being done.
 
+### Docker container labeling for cleanup
+Label containers at creation time with the run ID, then filter on teardown.
+
+**When creating containers (DockerExecutor):**
+```bash
+docker run --label tuptup.run=<runId> --label tuptup.job=<jobName> ...
+```
+
+**On teardown:**
+```bash
+# Stop and remove containers for this run
+docker rm -f $(docker ps -aq --filter label=tuptup.run=<runId>)
+
+# Optionally prune images (if using per-run images)
+docker image prune --filter label=tuptup.run=<runId>
+```
+
+**Considerations:**
+- DockerExecutor needs access to `runId` (pass via RuntimeContext or constructor)
+- Graceful stop with timeout before force kill: `docker stop -t 10 <container> && docker rm <container>`
+- Decide if images should be labeled/pruned or kept for caching
+
 ## handle multiple runners
 This thing could be a queue of runners, TBD
 It would also need another? abstraction, like a controller or something, that would
