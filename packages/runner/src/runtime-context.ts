@@ -19,11 +19,11 @@ import type { PipelineDefinition } from './pipeline.types'
  */
 export interface RuntimeContext {
   id: string
-  pipeline: PipelineDefinition
   repository: {
     url: string
     branch?: string
   }
+  pipeline: PipelineDefinition
   paths: {
     workspace: string
     archive: string

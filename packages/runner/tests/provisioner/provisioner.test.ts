@@ -1,19 +1,18 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import { rmSync, statSync } from 'fs'
+import { readdirSync, rmSync, statSync } from 'fs'
 import path from 'path'
-import { Provisioner } from '../../src/provisioner'
+import { setupProvisioning } from 'src/provisioner'
+import type { RuntimeContext } from 'src/runtime-context'
 
 describe('Provisioner', async () => {
-  let provisioner: Provisioner | null = null
+  let ctx: RuntimeContext
 
   const cleanup = () => {
-    if (provisioner) {
-      const ctx = provisioner.context
+    if (ctx) {
       rmSync(ctx.paths.workspace, { recursive: true, force: true })
       if (ctx.paths.archive) {
         rmSync(ctx.paths.archive, { recursive: true, force: true })
       }
-      provisioner = null
     }
   }
 
@@ -21,11 +20,9 @@ describe('Provisioner', async () => {
 
   describe('Setup', () => {
     it('should prepare the workspace', async () => {
-      provisioner = new Provisioner({
+      ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
-
-      const ctx = await provisioner.setup()
 
       expect(
         statSync(path.join(ctx.paths.workspace, '/app')).isDirectory(),
@@ -41,11 +38,9 @@ describe('Provisioner', async () => {
     })
 
     it('should prepare the archive', async () => {
-      provisioner = new Provisioner({
+      ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
-
-      const ctx = await provisioner.setup()
 
       expect(
         statSync(path.join(ctx.paths.archive, '/artifacts')).isDirectory(),
@@ -57,11 +52,9 @@ describe('Provisioner', async () => {
     })
 
     it('should clone the provided repo into the workspace', async () => {
-      provisioner = new Provisioner({
+      ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
-
-      const ctx = await provisioner.setup()
 
       expect(
         statSync(path.join(ctx.paths.workspace, '/app/.git')).isDirectory(),
@@ -81,11 +74,9 @@ describe('Provisioner', async () => {
     })
 
     it('should parse the pipeline config', async () => {
-      provisioner = new Provisioner({
+      ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
-
-      const ctx = await provisioner.setup()
 
       expect(ctx).not.toBeNull()
       expect(ctx.pipeline?.name).toBe('my-pipeline')
@@ -97,57 +88,73 @@ describe('Provisioner', async () => {
 
   describe('Error Handling', () => {
     it('should throw an error if the repo cannot be cloned', async () => {
-      provisioner = new Provisioner({
-        repoUrl: 'xoxoxo',
-      })
-
-      await expect(provisioner.setup()).rejects.toThrow(
-        /Provisioner: Failed to clone repository from xoxoxo with exit code 128/,
+      await expect(
+        setupProvisioning({
+          repoUrl: 'xoxoxo',
+        }),
+      ).rejects.toThrow(
+        /Provisioner: Failed to clone xoxoxo repository, exit code 128/,
       )
     })
 
     it('should throw an error if the config file is missing', async () => {
-      provisioner = new Provisioner({
-        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        repoBranch: 'test/missing-config',
-      })
-
-      await expect(provisioner.setup()).rejects.toThrow(
-        /Provisioner: Error accessing config file/,
-      )
+      await expect(
+        setupProvisioning({
+          repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+          repoBranch: 'test/missing-config',
+        }),
+      ).rejects.toThrow(/Provisioner: Error accessing config file/)
     })
 
     it('should throw an error if the config yml file cannot be parsed', async () => {
-      provisioner = new Provisioner({
-        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        repoBranch: 'test/invalid-config-file',
-      })
-
-      await expect(provisioner.setup()).rejects.toThrow(
-        /Provisioner: Error parsing YML config file/,
-      )
+      await expect(
+        setupProvisioning({
+          repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+          repoBranch: 'test/invalid-config-file',
+        }),
+      ).rejects.toThrow(/Provisioner: Error parsing YML config file/)
     })
 
     it('should throw an error if the config is invalid', async () => {
-      provisioner = new Provisioner({
-        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        repoBranch: 'test/invalid-config',
-      })
-
-      await expect(provisioner.setup()).rejects.toThrow(
-        /Provisioner: Invalid pipeline configuration/,
-      )
+      await expect(
+        setupProvisioning({
+          repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+          repoBranch: 'test/invalid-config',
+        }),
+      ).rejects.toThrow(/Provisioner: Invalid pipeline configuration/)
     })
 
     it("should throw an error if the job names aren't unique", async () => {
-      provisioner = new Provisioner({
-        repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        repoBranch: 'test/invalid-config-job-not-unique',
-      })
-
-      await expect(provisioner.setup()).rejects.toThrow(
+      await expect(
+        setupProvisioning({
+          repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+          repoBranch: 'test/invalid-config-job-not-unique',
+        }),
+      ).rejects.toThrow(
         /Provisioner: Invalid pipeline configuration.*Duplicate job name: \\"test\\"/,
       )
+    })
+
+    it('should clean up workspace and archive on provisioning error', async () => {
+      const workspaceRoot = '/tmp/tuptup'
+      const archiveRoot =
+        Bun.env.TUP_TUP_RUNS_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
+
+      const workspaceBefore = new Set(readdirSync(workspaceRoot))
+      const archiveBefore = new Set(readdirSync(archiveRoot))
+
+      await expect(
+        setupProvisioning({
+          repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
+          repoBranch: 'test/invalid-config',
+        }),
+      ).rejects.toThrow(/Provisioner: Invalid pipeline configuration/)
+
+      const workspaceAfter = new Set(readdirSync(workspaceRoot))
+      const archiveAfter = new Set(readdirSync(archiveRoot))
+
+      expect(workspaceAfter).toEqual(workspaceBefore)
+      expect(archiveAfter).toEqual(archiveBefore)
     })
 
     // TODO
