@@ -1,8 +1,9 @@
 # TODO
 - [x] refactor logger, executor interfaces
-- [ ] pipeline scheduler job timeout
+- [x] pipeline scheduler job timeout
+- [ ] runner lifecycle, teardown
 - [ ] runner container and communication
-- [ ] restricty containers with [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
+- [ ] restrict containers with [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
 - [ ] system logs (see phases below)
   - might have to rethink this
 - [ ] handle multiple runners(TBD)
@@ -33,6 +34,10 @@ Naming options:
 - `runOnFailure` / `when: always` — on the dependent job ("run me regardless of upstream status")
 
 TBD: which perspective feels more natural for pipeline definitions?
+
+## runner lifecycle, teardown
+Should define what does the teardown involves, what needs to be done after the scheduler finishes.
+Might also look at the test files to see what's being done.
 
 ## handle multiple runners
 This thing could be a queue of runners, TBD
