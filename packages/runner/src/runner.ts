@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs'
+import { rmdir } from 'node:fs/promises'
 import path from 'node:path'
 import { DockerExecutor } from './docker-executor'
 import { EventsLogger } from './events-logger'
@@ -25,7 +26,7 @@ export class Runner {
       repoBranch: this.repoBranch,
     })
 
-    const eventsLogger = new EventsLogger(path.join(context.paths.data))
+    const eventsLogger = new EventsLogger(context.paths.workspace)
 
     const completion = this.consumePipeline(context, eventsLogger)
 
@@ -83,5 +84,6 @@ export class Runner {
     // - clean up doecker containers/images created for this run
 
     rmSync(ctx.paths.workspace, { recursive: true, force: true })
+    // await rmdir(ctx.paths.workspace)
   }
 }
