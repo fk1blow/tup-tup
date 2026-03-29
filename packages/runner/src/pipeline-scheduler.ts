@@ -152,11 +152,8 @@ export class PipelineScheduler {
 
   private createTimer(ms: number) {
     let timerId: Timer
-    const timer = new Promise<void>(
-      resolve => (timerId = setTimeout(resolve, ms)),
-    )
+    const timer = new Promise(resolve => (timerId = setTimeout(resolve, ms)))
     const stop = () => clearTimeout(timerId!)
-
-    return { stop, timer }
+    return { timer, stop }
   }
 }
