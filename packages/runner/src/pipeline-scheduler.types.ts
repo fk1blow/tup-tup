@@ -1,18 +1,18 @@
 export const PipelineSchedulerEventType = {
-  RUN_STARTED: 'run:started',
-  RUN_FINISHED: 'run:finished',
-  JOB_STARTED: 'job:started',
-  JOB_SETTLED: 'job:settled',
+  RunStarted: 'run:started',
+  RunFinished: 'run:finished',
+  JobStarted: 'job:started',
+  JobSettled: 'job:settled',
 } as const
 
 export type PipelineSchedulerJobEvent =
   | {
-      type: typeof PipelineSchedulerEventType.JOB_STARTED
+      type: typeof PipelineSchedulerEventType.JobStarted
       pipeline: string
       job: string
     }
   | {
-      type: typeof PipelineSchedulerEventType.JOB_SETTLED
+      type: typeof PipelineSchedulerEventType.JobSettled
       pipeline: string
       job: string
       success: boolean
@@ -20,8 +20,8 @@ export type PipelineSchedulerJobEvent =
     }
 
 export type PipelineSchedulerRunEvent =
-  | { type: typeof PipelineSchedulerEventType.RUN_STARTED; pipeline: string }
-  | { type: typeof PipelineSchedulerEventType.RUN_FINISHED; pipeline: string }
+  | { type: typeof PipelineSchedulerEventType.RunStarted; pipeline: string }
+  | { type: typeof PipelineSchedulerEventType.RunFinished; pipeline: string }
 
 export type PipelineSchedulerEvent =
   | PipelineSchedulerJobEvent
@@ -30,5 +30,5 @@ export type PipelineSchedulerEvent =
 export const isPipelineSchedulerJobEvent = (
   event: PipelineSchedulerEvent,
 ): event is PipelineSchedulerJobEvent =>
-  event.type === PipelineSchedulerEventType.JOB_STARTED ||
-  event.type === PipelineSchedulerEventType.JOB_SETTLED
+  event.type === PipelineSchedulerEventType.JobStarted ||
+  event.type === PipelineSchedulerEventType.JobSettled

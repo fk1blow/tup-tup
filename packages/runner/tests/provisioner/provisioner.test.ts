@@ -8,9 +8,11 @@ describe('Provisioner', async () => {
 
   const cleanup = () => {
     if (provisioner) {
-      const id = provisioner.id
-      rmSync(`/tmp/tuptup/${id}`, { recursive: true, force: true })
-      rmSync(`${Bun.env.TUP_TUP_RUNS_PATH}/${id}`, { recursive: true, force: true })
+      const ctx = provisioner.context
+      rmSync(ctx.paths.workspace, { recursive: true, force: true })
+      if (ctx.paths.archive) {
+        rmSync(ctx.paths.archive, { recursive: true, force: true })
+      }
       provisioner = null
     }
   }

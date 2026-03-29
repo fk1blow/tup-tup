@@ -4,13 +4,15 @@ import type { PipelineDefinition } from '../../src/pipeline.types'
 import { TestListLogger } from './test-list-logger'
 import type { WorkspaceContext } from './workspace-describe'
 
-export const setupCoordinator = (
+export const setupScheduler = (
   ctx: WorkspaceContext,
   pipeline: PipelineDefinition,
-): { coordinator: PipelineScheduler } => {
-  const coordinator = new PipelineScheduler({
+): { scheduler: PipelineScheduler } => {
+  const scheduler = new PipelineScheduler({
     runtimeCtx: {
-      ...ctx,
+      id: ctx.id,
+      repository: ctx.repository,
+      paths: ctx.paths,
       pipeline,
     },
     jobsLoggerFactory: () => new TestListLogger(),
@@ -18,10 +20,10 @@ export const setupCoordinator = (
       return new DockerExecutor({
         name: pipeline.name,
         image: opts.image,
-        workspacePath: ctx.workspacePath,
+        workspacePath: ctx.paths.workspace,
       })
     },
   })
 
-  return { coordinator }
+  return { scheduler }
 }

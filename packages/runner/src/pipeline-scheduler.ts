@@ -23,6 +23,8 @@ type PipelineSchedulerOpts = {
   }>
 }
 
+// TODO theres too much burden in the name, so consider renaming to something like
+// Scheduler, JobScheduler
 export class PipelineScheduler {
   private runtimeCtx: RuntimeContext
   private jobsLoggerFactory: PipelineSchedulerOpts['jobsLoggerFactory']
@@ -47,10 +49,10 @@ export class PipelineScheduler {
         readyJobs.map((job: JobDefinition) => [job.name, this.runJob(job)]),
       )
 
-      for (const [jobName, promise] of nextRunningJobs) {
-        this.runningJobs.set(jobName, promise)
+      for (const [jobName, jobRunning] of nextRunningJobs) {
+        this.runningJobs.set(jobName, jobRunning)
         yield {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: this.runtimeCtx.pipeline.name,
           job: jobName,
         }
@@ -67,7 +69,7 @@ export class PipelineScheduler {
       this.settledJobs.set(name, [success, jobDefinition, error])
 
       yield {
-        type: PipelineSchedulerEventType.JOB_SETTLED,
+        type: PipelineSchedulerEventType.JobSettled,
         pipeline: this.runtimeCtx.pipeline.name,
         job: name,
         success,
@@ -78,12 +80,12 @@ export class PipelineScheduler {
 
   private async runJob(definition: JobDefinition): Promise<SettledJobResult> {
     const executor = this.dockerExecutorFactory({
-      workspacePath: this.runtimeCtx.workspacePath,
+      workspacePath: this.runtimeCtx.paths.workspace,
       image: definition.image,
       name: definition.name,
     })
     const logger = this.jobsLoggerFactory(
-      path.join(this.runtimeCtx.logsPath, definition.name),
+      path.join(this.runtimeCtx.paths.archive, 'logs', definition.name),
     )
     const job = new Job({
       definition,
@@ -91,6 +93,7 @@ export class PipelineScheduler {
       executor,
     })
 
+    // Executor could fail to start for various reasons, like invalid image, docker daemon not running, etc.
     try {
       await executor.start()
     } catch (error) {
@@ -104,13 +107,14 @@ export class PipelineScheduler {
 
     const jobRun = job.run()
 
-    const { timer: jobTimeout, stop: stopTimer } = this.createTimer(
+    const { timer: jobTimer, stop: stopTimer } = this.createTimer(
+      // TODO the fallback(30 min) should be configurable
       definition.timeout ?? 1000 * 60 * 30,
     )
 
     const timeoutRace = await Promise.race([
       jobRun.then(result => ({ type: 'runJob', result }) as const),
-      jobTimeout.then(() => ({ type: 'timeout' }) as const),
+      jobTimer.then(() => ({ type: 'timeout' }) as const),
     ])
 
     let result: SettledJobResult

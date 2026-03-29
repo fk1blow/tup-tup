@@ -8,7 +8,7 @@ export const PipelineDefinition = z.object({
   jobs: z
     .array(JobDefinition)
     .nonempty({ message: 'At least one job is required' })
-    // check for duplicate job names
+    // checks for duplicate job names
     .superRefine((jobs, ctx) => {
       const names = new Set<string>()
 

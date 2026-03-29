@@ -6,12 +6,15 @@ import {
 import { setupWorkspaceIn, teardownWorkspaceIn } from './workspace.test-helpers'
 
 export interface WorkspaceContext {
-  repoUrl: string
-  repoBranch: string
-  workspacePath: string
-  artifactsPath: string
-  logsPath: string
-  appPath: string
+  id: string
+  repository: {
+    url: string
+    branch?: string
+  }
+  paths: {
+    workspace: string
+    archive: string
+  }
 }
 
 export function describeWithWorkspace(
@@ -21,23 +24,26 @@ export function describeWithWorkspace(
 ) {
   describe(name, () => {
     const ctx: WorkspaceContext = {
-      repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-      repoBranch: 'main',
-      workspacePath: '',
-      artifactsPath: '',
-      logsPath: '',
-      appPath: '',
+      id: '',
+      repository: {
+        url: 'https://github.com/fk1blow/tup-tup-demo-repo',
+        branch: 'main',
+      },
+      paths: {
+        workspace: '',
+        archive: '',
+      },
     }
 
     beforeEach(() => {
-      ctx.workspacePath = setupWorkspaceIn(workingDir)
-      ctx.artifactsPath = `${ctx.workspacePath}/artifacts`
-      ctx.logsPath = `${ctx.workspacePath}/logs`
-      ctx.appPath = `${ctx.workspacePath}/app`
+      ctx.id = crypto.randomUUID()
+      ctx.paths.workspace = setupWorkspaceIn(workingDir)
+      ctx.paths.archive = setupWorkspaceIn(workingDir)
     })
 
     afterEach(() => {
-      teardownWorkspaceIn(ctx.workspacePath)
+      teardownWorkspaceIn(ctx.paths.workspace)
+      teardownWorkspaceIn(ctx.paths.archive)
     })
 
     afterAll(async () => {

@@ -18,10 +18,10 @@ type BuildingRuntimeContext = {
 }
 
 export class Provisioner {
-  private context: BuildingRuntimeContext | RuntimeContext
+  private _context: BuildingRuntimeContext | RuntimeContext
 
-  get id() {
-    return this.context.id
+  get context(): Readonly<BuildingRuntimeContext | RuntimeContext> {
+    return this._context
   }
 
   constructor(opts: {
@@ -30,7 +30,7 @@ export class Provisioner {
   }) {
     const runId = crypto.randomUUID()
 
-    this.context = {
+    this._context = {
       id: runId,
       repository: {
         url: opts.repoUrl,
@@ -47,16 +47,17 @@ export class Provisioner {
     await this.prepareArchive()
     await this.cloneRepo()
     await this.parseConfig()
+
     // TODO implement it and use this(use https://www.npmjs.com/package/dependency-graph)
     // await this.validateCyclicDependencies()
 
     // We can safely cast the pipeline context to the complete version here
     // If any of the steps above failed, an error would have been thrown
-    return this.context as RuntimeContext
+    return this._context as RuntimeContext
   }
 
   private async prepareWorkspace() {
-    const { workspace } = this.context.paths
+    const { workspace } = this._context.paths
     const appPath = path.join(workspace, 'app')
     const artifactsPath = path.join(workspace, 'artifacts')
     const logsPath = path.join(workspace, 'logs')
@@ -85,10 +86,10 @@ export class Provisioner {
       )
     }
 
-    this.context = {
-      ...this.context,
+    this._context = {
+      ...this._context,
       paths: {
-        workspace: this.context.paths.workspace,
+        workspace: this._context.paths.workspace,
       },
     }
   }
@@ -96,7 +97,7 @@ export class Provisioner {
   private async prepareArchive() {
     const archiveRoot =
       Bun.env.TUP_TUP_RUNS_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
-    const archivePath = path.join(archiveRoot, this.context.id)
+    const archivePath = path.join(archiveRoot, this._context.id)
 
     try {
       mkdirSync(archivePath, { recursive: true })
@@ -125,10 +126,10 @@ export class Provisioner {
       )
     }
 
-    this.context = {
-      ...this.context,
+    this._context = {
+      ...this._context,
       paths: {
-        ...this.context.paths,
+        ...this._context.paths,
         archive: archivePath,
       },
     }
@@ -137,13 +138,13 @@ export class Provisioner {
   private async cloneRepo() {
     const args = ['git', 'clone']
     // clone what branch
-    if (this.context.repository.branch) {
-      args.push('--branch', this.context.repository.branch)
+    if (this._context.repository.branch) {
+      args.push('--branch', this._context.repository.branch)
     }
     // clone where
     args.push(
-      this.context.repository.url,
-      path.join(this.context.paths.workspace, 'app'),
+      this._context.repository.url,
+      path.join(this._context.paths.workspace, 'app'),
     )
 
     const subprocess = Bun.spawn(args, {
@@ -155,7 +156,7 @@ export class Provisioner {
 
     if (exitCode !== 0) {
       throw new Error(
-        `Provisioner: Failed to clone repository from ${this.context.repository.url} with exit code ${exitCode}`,
+        `Provisioner: Failed to clone repository from ${this._context.repository.url} with exit code ${exitCode}`,
       )
     }
 
@@ -164,7 +165,7 @@ export class Provisioner {
 
   private async parseConfig() {
     const configPath = path.join(
-      this.context.paths.workspace,
+      this._context.paths.workspace,
       'app',
       '.tuptup.yml',
     )
@@ -194,8 +195,8 @@ export class Provisioner {
         `Provisioner: Invalid pipeline configuration ${JSON.stringify(configValidation.error.issues)}`,
       )
 
-    this.context = {
-      ...this.context,
+    this._context = {
+      ...this._context,
       pipeline: configValidation.data,
     }
   }

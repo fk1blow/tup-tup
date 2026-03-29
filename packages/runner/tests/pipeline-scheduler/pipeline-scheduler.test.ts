@@ -3,13 +3,13 @@ import {
   isPipelineSchedulerJobEvent,
   PipelineSchedulerEventType,
 } from '../../src/pipeline-scheduler.types'
-import { setupCoordinator } from '../__helpers__/pipeline-scheduler.test-helpers'
+import { setupScheduler } from '../__helpers__/pipeline-scheduler.test-helpers'
 import { describeWithWorkspace } from '../__helpers__/workspace-describe'
 
 describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
   describe('Scheduling (happy path)', () => {
     it('should run multiple parallel jobs (no dependencies)', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -36,24 +36,24 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_b',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_b',
           success: true,
           error: undefined,
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: true,
@@ -65,7 +65,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
   describe('Dependencies', () => {
     it('should run dependency chain in correct order', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -107,36 +107,36 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
       // Strict order for deterministic part
       expect(allButLastTwo).toEqual([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_c',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_c',
           success: true,
           error: undefined,
         },
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: true,
           error: undefined,
         },
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_b',
         },
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_d',
         },
@@ -149,7 +149,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should skip following jobs when dependency fails', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -174,12 +174,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: false,
@@ -189,7 +189,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should skip entire chain when upstream fails', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -221,12 +221,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
       // Only job_a should run; job_b and job_c should be skipped
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: false,
@@ -236,7 +236,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should handle diamond dependency pattern', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -273,12 +273,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       // job_a must complete first
       expect(events[0]).toMatchObject({
-        type: PipelineSchedulerEventType.JOB_STARTED,
+        type: PipelineSchedulerEventType.JobStarted,
         pipeline: 'my-pipeline',
         job: 'job_a',
       })
       expect(events[1]).toMatchObject({
-        type: PipelineSchedulerEventType.JOB_SETTLED,
+        type: PipelineSchedulerEventType.JobSettled,
         pipeline: 'my-pipeline',
         job: 'job_a',
         success: true,
@@ -294,7 +294,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       // job_d must run last
       expect(events[events.length - 1]).toMatchObject({
-        type: PipelineSchedulerEventType.JOB_SETTLED,
+        type: PipelineSchedulerEventType.JobSettled,
         pipeline: 'my-pipeline',
         job: 'job_d',
         success: true,
@@ -304,7 +304,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
   describe('Timeouts', () => {
     it('should handle a job timing out', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -327,12 +327,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: false,
@@ -344,7 +344,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should complete job before timeout when fast enough', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -364,12 +364,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: true,
@@ -381,7 +381,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
   describe('Errors', () => {
     it('should fail job with non-zero exit code', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -400,12 +400,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: false,
@@ -415,7 +415,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should fail job when docker image not found', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-pipeline',
         jobs: [
           {
@@ -440,24 +440,24 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
       expect(events).toMatchObject([
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_a',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_a',
           success: true,
           error: undefined,
         },
         {
-          type: PipelineSchedulerEventType.JOB_STARTED,
+          type: PipelineSchedulerEventType.JobStarted,
           pipeline: 'my-pipeline',
           job: 'job_b',
         },
         {
-          type: PipelineSchedulerEventType.JOB_SETTLED,
+          type: PipelineSchedulerEventType.JobSettled,
           pipeline: 'my-pipeline',
           job: 'job_b',
           success: false,
@@ -473,7 +473,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
 
   describe('Events', () => {
     it('should emit job:started for each job', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'test-pipeline',
         jobs: [
           {
@@ -496,7 +496,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
       }
 
       const startedEvents = events.filter(
-        e => e.type === PipelineSchedulerEventType.JOB_STARTED,
+        e => e.type === PipelineSchedulerEventType.JobStarted,
       )
       expect(startedEvents).toHaveLength(2)
       const jobEvents = startedEvents.filter(isPipelineSchedulerJobEvent)
@@ -504,7 +504,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should emit job:settled with success=true on success', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'test-pipeline',
         jobs: [
           {
@@ -522,11 +522,11 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
       }
 
       const settledEvents = events.filter(
-        e => e.type === PipelineSchedulerEventType.JOB_SETTLED,
+        e => e.type === PipelineSchedulerEventType.JobSettled,
       )
       expect(settledEvents).toHaveLength(1)
       expect(settledEvents[0]).toMatchObject({
-        type: PipelineSchedulerEventType.JOB_SETTLED,
+        type: PipelineSchedulerEventType.JobSettled,
         pipeline: 'test-pipeline',
         job: 'job_a',
         success: true,
@@ -535,7 +535,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should emit job:settled with success=false and error on failure', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'test-pipeline',
         jobs: [
           {
@@ -553,11 +553,11 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
       }
 
       const settledEvents = events.filter(
-        e => e.type === PipelineSchedulerEventType.JOB_SETTLED,
+        e => e.type === PipelineSchedulerEventType.JobSettled,
       )
       expect(settledEvents).toHaveLength(1)
       expect(settledEvents[0]).toMatchObject({
-        type: PipelineSchedulerEventType.JOB_SETTLED,
+        type: PipelineSchedulerEventType.JobSettled,
         pipeline: 'test-pipeline',
         job: 'job_a',
         success: false,
@@ -566,7 +566,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should include pipeline name in all events', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'my-unique-pipeline',
         jobs: [
           {
@@ -589,7 +589,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
     })
 
     it('should include job name in all job events', async () => {
-      const { coordinator } = setupCoordinator(ctx, {
+      const { scheduler: coordinator } = setupScheduler(ctx, {
         name: 'test-pipeline',
         jobs: [
           {

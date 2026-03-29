@@ -6,36 +6,20 @@ import { PipelineScheduler } from './pipeline-scheduler'
 import { Provisioner } from './provisioner'
 
 export class Runner {
-  // These 3(workspace, repoUrl, repoBranch) might also need the path supplied by the system where tuptup is running,
-  // so that it can be used to store the workspace.
-  // Might come from the .env file or from the CLI args
-  private _workspace: string
-  private _repoUrl: string
-  private _repoBranch?: string
-  // private _eventsLogger: Logger
+  readonly provisioner: Provisioner
 
   constructor(opts: {
     repoUrl: string
     repoBranch?: string
-    workspace: string
   }) {
-    // this._workspace = `/tmp/tup-tup-runner-${Date.now()}`
-    this._workspace = opts.workspace
-    this._repoUrl = opts.repoUrl
-    this._repoBranch = opts.repoBranch
-    // this._eventsLogger = new FileLogger(
-    //   path.join(this._workspace, 'events.log'),
-    // )
+    this.provisioner = new Provisioner({
+      repoUrl: opts.repoUrl,
+      repoBranch: opts.repoBranch,
+    })
   }
 
   async start() {
-    const provisioner = new Provisioner({
-      repoUrl: this._repoUrl,
-      repoBranch: this._repoBranch,
-      workspacePath: this._workspace,
-    })
-
-    const runtimeCtx = await provisioner.prepare()
+    const runtimeCtx = await this.provisioner.setup()
 
     const pipelineScheduler = new PipelineScheduler({
       runtimeCtx,
@@ -47,7 +31,7 @@ export class Runner {
       }) => new DockerExecutor(opts),
     })
 
-    const eventsLogger = new EventsLogger(path.join(this._workspace, 'events'))
+    const eventsLogger = new EventsLogger(path.join(runtimeCtx.paths.archive, 'events'))
 
     eventsLogger.log({
       type: 'run:started',

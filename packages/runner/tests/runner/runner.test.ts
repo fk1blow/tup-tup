@@ -1,41 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { statSync } from 'fs'
+import { afterEach, describe, expect, it } from 'bun:test'
+import { rmSync, statSync } from 'fs'
 import path from 'path'
 import { Runner } from '../../src/runner'
-import {
-  setupWorkspaceIn,
-  teardownWorkspaceIn,
-} from '../__helpers__/workspace.test-helpers'
 
 describe('Runner', async () => {
-  let workspacePath: string
+  let runner: Runner | null = null
 
-  beforeEach(() => {
-    workspacePath = setupWorkspaceIn('./tmp/runner/runs')
-  })
+  const cleanup = () => {
+    if (runner) {
+      const ctx = runner.provisioner.context
+      rmSync(`/tmp/tuptup/${ctx.id}`, { recursive: true, force: true })
+      if (ctx.paths.archive) {
+        rmSync(ctx.paths.archive, { recursive: true, force: true })
+      }
+      runner = null
+    }
+  }
 
-  afterEach(() => {
-    teardownWorkspaceIn(workspacePath)
-  })
+  afterEach(cleanup)
 
+  // WIP
   describe('Runner', () => {
     it.only('should write the events.log', async () => {
-      const runner = new Runner({
+      runner = new Runner({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
-        workspace: workspacePath,
       })
 
       await runner.start()
 
-      expect(statSync(path.join(workspacePath, 'events.log')).isFile()).toBe(
-        true,
-      )
+      const archivePath = runner.provisioner.context.paths.archive!
 
-      const eventLogFile = Bun.file(path.join(workspacePath, 'events.log'))
+      expect(statSync(path.join(archivePath, 'events.log')).isFile()).toBe(true)
+
+      const eventLogFile = Bun.file(path.join(archivePath, 'events.log'))
       const eventLogContent = await eventLogFile.text()
-      // console.log('eventLogContent:', eventLogContent)
 
-      expect(eventLogContent).toContain('"type":"started"')
+      expect(eventLogContent).toContain('"type":"run:started"')
       expect(eventLogContent).toContain('"pipeline":"my-pipeline"')
     })
   })
