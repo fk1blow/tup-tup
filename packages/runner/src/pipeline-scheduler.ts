@@ -85,7 +85,7 @@ export class PipelineScheduler {
       name: definition.name,
     })
     const logger = this.jobsLoggerFactory(
-      path.join(this.runtimeCtx.paths.data, 'logs', definition.name),
+      path.join(this.runtimeCtx.paths.workspace, 'logs', definition.name),
     )
     const job = new Job({
       definition,
