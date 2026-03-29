@@ -41,7 +41,6 @@ describe('Provisioner', async () => {
       ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
-      console.log('ctx:', ctx)
 
       expect(
         statSync(path.join(ctx.paths.data, '/artifacts')).isDirectory(),
