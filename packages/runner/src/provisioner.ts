@@ -12,20 +12,20 @@ export async function setupProvisioning(opts: {
   const undoFns: (() => void)[] = []
 
   let workspacePath: string
-  let archivePath: string
+  let dataPath: string
   let pipeline: PipelineDefinition
 
   try {
-    const setupWorkspaceResult = setupWorkspaceDir(runId)
-    workspacePath = setupWorkspaceResult.workspacePath
-    undoFns.push(setupWorkspaceResult.undo)
+    const setupWorkspaceDirResult = setupWorkspaceDir(runId)
+    workspacePath = setupWorkspaceDirResult.workspacePath
+    undoFns.push(setupWorkspaceDirResult.undo)
 
-    const setupArchiveResult = setupArchiveDir(runId)
-    archivePath = setupArchiveResult.archivePath
-    undoFns.push(setupArchiveResult.undo)
+    const setupDataDirResult = setupDataDir(runId)
+    dataPath = setupDataDirResult.dataPath
+    undoFns.push(setupDataDirResult.undo)
 
     await cloneRepo(opts.repoUrl, opts.repoBranch, workspacePath)
-    pipeline = await parseConfig(setupWorkspaceResult.appPath)
+    pipeline = await parseConfig(setupWorkspaceDirResult.appPath)
   } catch (err) {
     undoFns.forEach(undo => undo())
     throw err
@@ -39,7 +39,7 @@ export async function setupProvisioning(opts: {
     },
     paths: {
       workspace: workspacePath,
-      archive: archivePath,
+      data: dataPath,
     },
     pipeline,
   } as RuntimeContext
@@ -81,27 +81,27 @@ function setupWorkspaceDir(runId: string) {
   return { workspacePath, appPath, undo }
 }
 
-function setupArchiveDir(runId: string) {
-  const archiveRootPath =
-    Bun.env.TUP_TUP_RUNS_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
-  const archivePath = path.join(archiveRootPath, runId)
+function setupDataDir(runId: string) {
+  const dataRootPath =
+    Bun.env.TUP_TUP_DATA_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
+  const dataPath = path.join(dataRootPath, runId)
 
   try {
-    mkdirSync(archivePath, { recursive: true })
+    mkdirSync(dataPath, { recursive: true })
   } catch (err) {
     throw new Error(
-      `Provisioner: Error while attempting to create archive artifacts directory at ${archivePath}: ${err}`,
+      `Provisioner: Error while attempting to create data artifacts directory at ${dataPath}: ${err}`,
     )
   }
 
-  const artifactsPath = path.join(archivePath, 'artifacts')
-  const logsPath = path.join(archivePath, 'logs')
+  const artifactsPath = path.join(dataPath, 'artifacts')
+  const logsPath = path.join(dataPath, 'logs')
 
   try {
     mkdirSync(artifactsPath)
   } catch (err) {
     throw new Error(
-      `Provisioner: Error while attempting to create archive artifacts directory at ${artifactsPath}: ${err}`,
+      `Provisioner: Error while attempting to create data artifacts directory at ${artifactsPath}: ${err}`,
     )
   }
 
@@ -109,13 +109,13 @@ function setupArchiveDir(runId: string) {
     mkdirSync(logsPath)
   } catch (err) {
     throw new Error(
-      `Provisioner: Error while attempting to create archive logs directory at ${logsPath}: ${err}`,
+      `Provisioner: Error while attempting to create data logs directory at ${logsPath}: ${err}`,
     )
   }
 
-  const undo = () => rmSync(archivePath, { recursive: true, force: true })
+  const undo = () => rmSync(dataPath, { recursive: true, force: true })
 
-  return { archivePath, undo }
+  return { dataPath, undo }
 }
 
 async function cloneRepo(

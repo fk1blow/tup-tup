@@ -5,8 +5,8 @@ import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
 export class EventsLogger {
   private fileWriter: FileSink
 
-  constructor(private logFilePath: string) {
-    const file = Bun.file(path.join(`${this.logFilePath}.log`))
+  constructor(archivePath: string) {
+    const file = Bun.file(path.join(archivePath, 'events.log'))
     this.fileWriter = file.writer()
   }
 

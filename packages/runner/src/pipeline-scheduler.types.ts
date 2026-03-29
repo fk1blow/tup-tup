@@ -21,7 +21,11 @@ export type PipelineSchedulerJobEvent =
 
 export type PipelineSchedulerRunEvent =
   | { type: typeof PipelineSchedulerEventType.RunStarted; pipeline: string }
-  | { type: typeof PipelineSchedulerEventType.RunFinished; pipeline: string }
+  | {
+      type: typeof PipelineSchedulerEventType.RunFinished
+      pipeline: string
+      error?: Error
+    }
 
 export type PipelineSchedulerEvent =
   | PipelineSchedulerJobEvent

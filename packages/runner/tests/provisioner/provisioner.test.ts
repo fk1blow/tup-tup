@@ -10,8 +10,8 @@ describe('Provisioner', async () => {
   const cleanup = () => {
     if (ctx) {
       rmSync(ctx.paths.workspace, { recursive: true, force: true })
-      if (ctx.paths.archive) {
-        rmSync(ctx.paths.archive, { recursive: true, force: true })
+      if (ctx.paths.data) {
+        rmSync(ctx.paths.data, { recursive: true, force: true })
       }
     }
   }
@@ -19,7 +19,7 @@ describe('Provisioner', async () => {
   afterEach(cleanup)
 
   describe('Setup', () => {
-    it('should prepare the workspace', async () => {
+    it('should prepare the workspace directory', async () => {
       ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
@@ -37,18 +37,19 @@ describe('Provisioner', async () => {
       ).toBe(true)
     })
 
-    it('should prepare the archive', async () => {
+    it('should prepare the data directory', async () => {
       ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',
       })
+      console.log('ctx:', ctx)
 
       expect(
-        statSync(path.join(ctx.paths.archive, '/artifacts')).isDirectory(),
+        statSync(path.join(ctx.paths.data, '/artifacts')).isDirectory(),
       ).toBe(true)
 
-      expect(
-        statSync(path.join(ctx.paths.archive, '/logs')).isDirectory(),
-      ).toBe(true)
+      expect(statSync(path.join(ctx.paths.data, '/logs')).isDirectory()).toBe(
+        true,
+      )
     })
 
     it('should clone the provided repo into the workspace', async () => {
@@ -135,13 +136,13 @@ describe('Provisioner', async () => {
       )
     })
 
-    it('should clean up workspace and archive on provisioning error', async () => {
+    it('should clean up workspace and data on provisioning error', async () => {
       const workspaceRoot = '/tmp/tuptup'
-      const archiveRoot =
+      const dataRoot =
         Bun.env.TUP_TUP_RUNS_PATH ?? path.join(Bun.env.HOME!, '.tuptup')
 
       const workspaceBefore = new Set(readdirSync(workspaceRoot))
-      const archiveBefore = new Set(readdirSync(archiveRoot))
+      const dataBefore = new Set(readdirSync(dataRoot))
 
       await expect(
         setupProvisioning({
@@ -151,10 +152,10 @@ describe('Provisioner', async () => {
       ).rejects.toThrow(/Provisioner: Invalid pipeline configuration/)
 
       const workspaceAfter = new Set(readdirSync(workspaceRoot))
-      const archiveAfter = new Set(readdirSync(archiveRoot))
+      const dataAfter = new Set(readdirSync(dataRoot))
 
       expect(workspaceAfter).toEqual(workspaceBefore)
-      expect(archiveAfter).toEqual(archiveBefore)
+      expect(dataAfter).toEqual(dataBefore)
     })
 
     // TODO

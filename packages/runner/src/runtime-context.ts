@@ -26,6 +26,6 @@ export interface RuntimeContext {
   pipeline: PipelineDefinition
   paths: {
     workspace: string
-    archive: string
+    data: string
   }
 }

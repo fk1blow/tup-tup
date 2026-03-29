@@ -1,28 +1,48 @@
+import { rmSync } from 'node:fs'
 import path from 'node:path'
 import { DockerExecutor } from './docker-executor'
 import { EventsLogger } from './events-logger'
 import { JobsLogger } from './jobs-logger'
 import { PipelineScheduler } from './pipeline-scheduler'
-import { Provisioner } from './provisioner'
+import { setupProvisioning } from './provisioner'
+import type { RuntimeContext } from './runtime-context'
 
 export class Runner {
-  readonly provisioner: Provisioner
+  private repoUrl: string
+  private repoBranch?: string
 
   constructor(opts: {
     repoUrl: string
     repoBranch?: string
   }) {
-    this.provisioner = new Provisioner({
-      repoUrl: opts.repoUrl,
-      repoBranch: opts.repoBranch,
-    })
+    this.repoUrl = opts.repoUrl
+    this.repoBranch = opts.repoBranch
   }
 
   async start() {
-    const runtimeCtx = await this.provisioner.setup()
+    const context = await setupProvisioning({
+      repoUrl: this.repoUrl,
+      repoBranch: this.repoBranch,
+    })
 
-    const pipelineScheduler = new PipelineScheduler({
-      runtimeCtx,
+    const eventsLogger = new EventsLogger(path.join(context.paths.data))
+
+    const completion = this.consumePipeline(context, eventsLogger)
+
+    return {
+      context,
+      completion,
+    }
+  }
+
+  private async consumePipeline(ctx: RuntimeContext, logger: EventsLogger) {
+    logger.log({
+      type: 'run:started',
+      pipeline: ctx.pipeline.name,
+    })
+
+    const scheduler = new PipelineScheduler({
+      runtimeCtx: ctx,
       jobsLoggerFactory: (logFilePath: string) => new JobsLogger(logFilePath),
       dockerExecutorFactory: (opts: {
         workspacePath: string
@@ -31,30 +51,37 @@ export class Runner {
       }) => new DockerExecutor(opts),
     })
 
-    const eventsLogger = new EventsLogger(path.join(runtimeCtx.paths.archive, 'events'))
+    let pipelineError: Error | undefined
 
-    eventsLogger.log({
-      type: 'run:started',
-      pipeline: runtimeCtx.pipeline.name,
-    })
+    try {
+      for await (const event of scheduler.schedule()) {
+        await logger.log(event)
+      }
+    } catch (err) {
+      pipelineError =
+        err instanceof Error
+          ? err
+          : new Error('Unknown error while running scheduler pipeline')
+    } finally {
+      await this.teardown(ctx)
 
-    // TODO wrap in try/catch
-    for await (const event of pipelineScheduler.schedule()) {
-      await eventsLogger.log(event)
+      logger.log({
+        type: 'run:finished',
+        pipeline: ctx.pipeline.name,
+        error: pipelineError,
+      })
+
+      await logger.close()
+
+      if (pipelineError) throw pipelineError
     }
-
-    // TODO this should come after the teardown
-    eventsLogger.log({
-      type: 'run:finished',
-      pipeline: runtimeCtx.pipeline.name,
-    })
-
-    eventsLogger.close()
-
-    // TODO add the teardown logic here
   }
 
-  private async teardown() {
-    // TODO add the teardown logic here, like removing the workspace and all the logs/artifacts
+  private async teardown(ctx: RuntimeContext) {
+    // TODO implement teardown logic
+    // - workspace: rm -rf /tmp/tuptup/${ctx.id}
+    // - clean up doecker containers/images created for this run
+
+    rmSync(ctx.paths.workspace, { recursive: true, force: true })
   }
 }
