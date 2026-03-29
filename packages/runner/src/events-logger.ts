@@ -1,12 +1,12 @@
-import type { BunFile, FileSink, FileSystemRouter } from 'bun'
+import type { FileSink } from 'bun'
 import path from 'path'
 import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
 
 export class EventsLogger {
   private fileWriter: FileSink
 
-  constructor(archivePath: string) {
-    const file = Bun.file(path.join(archivePath, 'events.log'))
+  constructor(destination: string) {
+    const file = Bun.file(path.join(destination, 'events.log'))
     this.fileWriter = file.writer()
   }
 
