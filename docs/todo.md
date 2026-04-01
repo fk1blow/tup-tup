@@ -1,6 +1,7 @@
 # TODO
 - [x] refactor logger, executor interfaces
 - [x] pipeline scheduler job timeout
+- [ ] Job isolation and artifacts
 - [ ] runner lifecycle, teardown
 - [ ] runner container and communication
 - [ ] restrict containers with [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
@@ -34,6 +35,117 @@ Naming options:
 - `runOnFailure` / `when: always` — on the dependent job ("run me regardless of upstream status")
 
 TBD: which perspective feels more natural for pipeline definitions?
+
+## Job isolation and artifacts
+
+### Approach: GitHub Actions-style (explicit checkout)
+
+Each job is fully self-contained and handles its own source checkout. Isolation comes naturally — each container has its own filesystem, no shared state.
+
+**Why this over provisioner-clones-once:**
+- Simpler architecture — no copy step, no workspace isolation dance
+- Jobs are independent — can run different repos, branches, or skip checkout entirely
+- Follows established patterns (GitHub Actions)
+
+### Structure
+```
+/tmp/tuptup/<runId>/
+  artifacts/
+    <job-name>/
+      dist/
+      coverage/
+  logs/
+    <job-name>.log
+```
+
+Provisioner becomes minimal — just sets up directory structure, no git clone.
+
+### Environment variables (injected by Runner)
+
+Runner receives trigger (webhook, CLI) with repo info, injects into every job container:
+```
+TUPTUP_REPO=https://github.com/user/repo
+TUPTUP_BRANCH=main
+TUPTUP_SHA=abc123
+```
+
+Jobs use them explicitly:
+```yaml
+jobs:
+  - name: build
+    image: oven/bun:1.3.7
+    commands:
+      - ["git", "clone", "--branch", "$TUPTUP_BRANCH", "--single-branch", "$TUPTUP_REPO", "."]
+      - ["bun", "install"]
+      - ["bun", "run", "build"]
+    artifacts:
+      - ./dist
+```
+
+### Artifacts via bind mounts
+
+Job definition declares artifact paths:
+```yaml
+artifacts:
+  - ./dist
+  - ./coverage
+```
+
+DockerExecutor mounts these paths to the artifacts directory:
+```
+-v /tmp/tuptup/<runId>/artifacts/<job-name>/dist:/app/dist
+-v /tmp/tuptup/<runId>/artifacts/<job-name>/coverage:/app/coverage
+```
+
+Job writes to `./dist` as normal → appears directly in artifacts folder.
+
+### Schema changes
+
+**JobDefinition:**
+```ts
+artifacts: z.array(z.string()).optional()  // paths relative to working dir
+```
+
+**RuntimeContext** (or equivalent) needs:
+```ts
+repository: {
+  url: string
+  branch?: string
+  sha?: string
+}
+```
+
+### Changes required
+
+**Provisioner**
+- Remove git clone logic
+- Just create directory structure: `artifacts/`, `logs/`
+
+**DockerExecutor**
+- Constructor accepts `artifacts?: string[]` and `env?: Record<string, string>`
+- `start()` creates artifact directories and builds `-v` mount flags
+- `start()` passes `-e` flags for environment variables
+
+**Runner.start()**
+- Build env vars from trigger context: `TUPTUP_REPO`, `TUPTUP_BRANCH`, `TUPTUP_SHA`
+- Pass to executor factory
+
+**dockerExecutorFactory signature**
+```ts
+dockerExecutorFactory: (opts: {
+  image: string
+  name: string
+  workspacePath: string
+  artifacts?: string[]
+  env?: Record<string, string>
+}) => DockerExecutor
+```
+
+### Notes
+- No workspace mount needed anymore — container filesystem is the workspace
+- Working directory is `/app` (or wherever job clones to)
+- Missing artifacts: directory stays empty — check job logs
+- Future: could provide a reusable "checkout" action/script to reduce boilerplate
 
 ## runner lifecycle, teardown
 Should define what does the teardown involves, what needs to be done after the scheduler finishes.

@@ -1,7 +1,6 @@
 import type { Executor } from '../src/executor'
 import type { JobDefinition } from '../src/job.types'
 import { JobDefinition as JobDefinitionParser } from '../src/job.types'
-import type { JobsLogger } from './jobs-logger'
 
 export class Job {
   private definition: JobDefinition

@@ -64,6 +64,8 @@ export class Runner {
           ? err
           : new Error('Unknown error while running scheduler pipeline')
     } finally {
+      // Temporarely disabled for testing purposes, to be re-enabled once we have a more robust teardown implementation
+      // TODO re-enable teardown
       await this.teardown(ctx)
 
       logger.log({
