@@ -1,6 +1,6 @@
 import type { FileSink } from 'bun'
 import path from 'path'
-import type { PipelineSchedulerEvent } from './pipeline-scheduler.types'
+import type { PipelineSchedulerEvent } from './job-scheduler.types'
 
 export class EventsLogger {
   private fileWriter: FileSink

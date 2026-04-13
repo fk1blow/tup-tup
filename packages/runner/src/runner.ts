@@ -8,7 +8,7 @@ import { JobsLogger } from './jobs-logger'
 import { setupProvisioning } from './provisioner'
 import type { RuntimeContext } from './runtime-context'
 
-export class Runner {
+export class Workflow {
   private repoUrl: string
   private repoBranch?: string
 

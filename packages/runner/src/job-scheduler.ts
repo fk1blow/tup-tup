@@ -1,11 +1,11 @@
 import path from 'path'
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
-import type { JobDefinition } from './job.types'
 import {
   PipelineSchedulerEventType,
   type PipelineSchedulerEvent,
-} from './pipeline-scheduler.types'
+} from './job-scheduler.types'
+import type { JobDefinition } from './job.types'
 import type { RuntimeContext } from './runtime-context'
 
 type JobNameKey = string

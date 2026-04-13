@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import {
   isPipelineSchedulerJobEvent,
   PipelineSchedulerEventType,
-} from '../../src/pipeline-scheduler.types'
+} from '../../src/job-scheduler.types'
 import { setupScheduler } from '../__helpers__/pipeline-scheduler.test-helpers'
 import { describeWithWorkspace } from '../__helpers__/workspace-describe'
 
