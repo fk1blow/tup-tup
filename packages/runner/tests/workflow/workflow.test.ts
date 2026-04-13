@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import { rmSync, statSync } from 'fs'
 import path from 'path'
 import type { RuntimeContext } from 'src/runtime-context'
-import { Workflow } from '../../src/runner'
+import { Workflow } from '../../src/workflow'
 
 describe('Runner', async () => {
   let ctx: RuntimeContext
