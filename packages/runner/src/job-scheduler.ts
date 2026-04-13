@@ -23,9 +23,7 @@ type PipelineSchedulerOpts = {
   }>
 }
 
-// TODO theres too much burden in the name, so consider renaming to something like
-// Scheduler, JobScheduler
-export class PipelineScheduler {
+export class JobScheduler {
   private runtimeCtx: RuntimeContext
   private jobsLoggerFactory: PipelineSchedulerOpts['jobsLoggerFactory']
   private dockerExecutorFactory: PipelineSchedulerOpts['dockerExecutorFactory']
@@ -128,6 +126,7 @@ export class PipelineScheduler {
     }
 
     await executor.stop()
+    // TODO this needs to go...
     await logger.close()
 
     return result

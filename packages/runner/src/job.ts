@@ -33,7 +33,8 @@ export class Job {
   async run() {
     let jobSucceeded = true
 
-    for (const [_, command] of this.definition.commands.entries()) {
+    for (const [_, command] of this.definition.steps.entries()) {
+      // TODO the `command`'s type
       const exitCode = await this.runCommand(command)
 
       if (exitCode !== null && exitCode > 0) {
@@ -55,7 +56,8 @@ export class Job {
   private async runCommand(cmd: string[]) {
     const subprocess = await this.executor.exec(cmd)
 
-    await this.logger.pipe(subprocess.stdout, subprocess.stderr)
+    // TODO this would/should move to the executor itself
+    // await this.logger.pipe(subprocess.stdout, subprocess.stderr)
 
     // 1-127 = process faild
     // 128+ = killed by signal (128 + signal number)

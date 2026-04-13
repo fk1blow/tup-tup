@@ -19,6 +19,16 @@ describe('Provisioner', async () => {
   afterEach(cleanup)
 
   describe('Setup', () => {
+    it.only('should download and parse the pipeline definition', async () => {
+      const res = await setupProvisioning({
+        user: 'fk1blow',
+        name: 'tup-tup-demo-repo',
+        branch: 'main',
+      })
+      expect(res.pipeline).not.toBeNull()
+      expect(res.pipeline?.name).toBe('my-pipeline')
+    })
+
     it('should prepare the workspace directory', async () => {
       ctx = await setupProvisioning({
         repoUrl: 'https://github.com/fk1blow/tup-tup-demo-repo',

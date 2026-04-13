@@ -3,8 +3,8 @@ import { rmdir } from 'node:fs/promises'
 import path from 'node:path'
 import { DockerExecutor } from './docker-executor'
 import { EventsLogger } from './events-logger'
+import { JobScheduler } from './job-scheduler'
 import { JobsLogger } from './jobs-logger'
-import { PipelineScheduler } from './pipeline-scheduler'
 import { setupProvisioning } from './provisioner'
 import type { RuntimeContext } from './runtime-context'
 
@@ -42,7 +42,7 @@ export class Runner {
       pipeline: ctx.pipeline.name,
     })
 
-    const scheduler = new PipelineScheduler({
+    const scheduler = new JobScheduler({
       runtimeCtx: ctx,
       jobsLoggerFactory: (logFilePath: string) => new JobsLogger(logFilePath),
       dockerExecutorFactory: (opts: {

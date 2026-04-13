@@ -1,5 +1,5 @@
 import { DockerExecutor } from '../../src/docker-executor'
-import { PipelineScheduler } from '../../src/pipeline-scheduler'
+import { JobScheduler } from '../../src/job-scheduler'
 import type { PipelineDefinition } from '../../src/pipeline.types'
 import { TestListLogger } from './test-list-logger'
 import type { WorkspaceContext } from './workspace-describe'
@@ -7,8 +7,8 @@ import type { WorkspaceContext } from './workspace-describe'
 export const setupScheduler = (
   ctx: WorkspaceContext,
   pipeline: PipelineDefinition,
-): { scheduler: PipelineScheduler } => {
-  const scheduler = new PipelineScheduler({
+): { scheduler: JobScheduler } => {
+  const scheduler = new JobScheduler({
     runtimeCtx: {
       id: ctx.id,
       repository: ctx.repository,

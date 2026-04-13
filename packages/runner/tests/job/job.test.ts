@@ -40,7 +40,7 @@ describe('Job', () => {
         setupJobSelfTeardown(
           {
             name: 'Test Job',
-            commands: [],
+            steps: [],
             image: 'node:alpine',
           },
           workspacePath,
@@ -56,7 +56,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['echo', 'hello world']],
+          steps: [['echo', 'hello world']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -65,7 +65,7 @@ describe('Job', () => {
       expect(success).toBe(true)
       expect(jobDefinition).toEqual({
         name: 'Test Job',
-        commands: [['echo', 'hello world']],
+        steps: [['echo', 'hello world']],
         image: 'node:alpine',
       })
     })
@@ -76,7 +76,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'hello world'],
             ['sleep', '0.1'],
             ['echo', 'goodbye'],
@@ -89,7 +89,7 @@ describe('Job', () => {
       expect(success).toBe(true)
       expect(jobDefinition).toEqual({
         name: 'Test Job',
-        commands: [
+        steps: [
           ['echo', 'hello world'],
           ['sleep', '0.1'],
           ['echo', 'goodbye'],
@@ -104,7 +104,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['sh', '-c', 'exit 1']],
+          steps: [['sh', '-c', 'exit 1']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -120,7 +120,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'first'],
             ['sh', '-c', 'exit 1'],
             ['echo', 'should-not-appear'],
@@ -143,7 +143,7 @@ describe('Job', () => {
           name: 'Test Job',
           // 1-127 = process failed
           // 128+ = killed by signal (128 + signal number)
-          commands: [['sh', '-c', 'kill -TERM $$']],
+          steps: [['sh', '-c', 'kill -TERM $$']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -159,7 +159,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'first'],
             // 1-127 = process failed
             // 128+ = killed by signal (128 + signal number)
@@ -186,7 +186,7 @@ describe('Job', () => {
           name: 'Test Job',
           // 1-127 = process failed
           // 128+ = killed by signal (128 + signal number)
-          commands: [['nonexistent-command-xyz']],
+          steps: [['nonexistent-command-xyz']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -202,7 +202,7 @@ describe('Job', () => {
       } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'first'],
             // 1-127 = process failed
             // 128+ = killed by signal (128 + signal number)
@@ -232,7 +232,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'hello'],
             ['echo', 'world'],
           ],
@@ -248,7 +248,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['sh', '-c', 'echo "error message" >&2'],
             ['echo', 'hello after an error message'],
           ],
@@ -264,7 +264,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
+          steps: [['sh', '-c', 'echo "out"; echo "err" >&2; echo "out2"']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -281,7 +281,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['true']],
+          steps: [['true']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -294,7 +294,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['sh', '-c', 'echo "dying"; exit 1']],
+          steps: [['sh', '-c', 'echo "dying"; exit 1']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -307,7 +307,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['printf', 'a\\nb\\nc']],
+          steps: [['printf', 'a\\nb\\nc']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -320,7 +320,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['seq', '1', '10000']],
+          steps: [['seq', '1', '10000']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -335,7 +335,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [['sh', '-c', 'for i in $(seq 1 100); do echo $i; done']],
+          steps: [['sh', '-c', 'for i in $(seq 1 100); do echo $i; done']],
           image: 'node:alpine',
         },
         workspacePath,
@@ -350,7 +350,7 @@ describe('Job', () => {
       const { logs } = await setupJobSelfTeardown(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             [
               'sh',
               '-c',
@@ -378,7 +378,7 @@ describe('Job', () => {
       const { job, logger, teardown } = await setupJob(
         {
           name: 'Test Job',
-          commands: [
+          steps: [
             ['echo', 'first'],
             ['sleep', '60'],
             ['echo', 'should-not-appear'],
@@ -407,7 +407,7 @@ describe('Job', () => {
       const { job, logger, teardown } = await setupJob(
         {
           name: 'Test Job',
-          commands: [['echo', 'done']],
+          steps: [['echo', 'done']],
           image: 'node:alpine',
         },
         workspacePath,

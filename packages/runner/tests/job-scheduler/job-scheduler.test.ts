@@ -6,7 +6,7 @@ import {
 import { setupScheduler } from '../__helpers__/pipeline-scheduler.test-helpers'
 import { describeWithWorkspace } from '../__helpers__/workspace-describe'
 
-describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
+describeWithWorkspace('JobScheduler', './tests/runner', ctx => {
   describe('Scheduling (happy path)', () => {
     it('should run multiple parallel jobs (no dependencies)', async () => {
       const { scheduler: coordinator } = setupScheduler(ctx, {
@@ -15,7 +15,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [
+            steps: [
               ['sleep', '1'],
               ['echo', 'Hello from job_a!'],
             ],
@@ -23,7 +23,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
           },
         ],
       })
@@ -71,25 +71,25 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
             dependsOn: ['job_a'],
           },
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_a!']],
+            steps: [['echo', 'Hello from job_a!']],
             dependsOn: ['job_c'],
           },
           {
             name: 'job_c',
             image: 'busybox',
-            commands: [['sleep', '0.5']],
+            steps: [['sleep', '0.5']],
           },
 
           {
             name: 'job_d',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_d!']],
+            steps: [['echo', 'Hello from job_d!']],
             dependsOn: ['job_a', 'job_c'],
           },
         ],
@@ -155,12 +155,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['sh', '-c', 'exit 1']],
+            steps: [['sh', '-c', 'exit 1']],
           },
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
             dependsOn: ['job_a'],
           },
         ],
@@ -195,18 +195,18 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['sh', '-c', 'exit 1']],
+            steps: [['sh', '-c', 'exit 1']],
           },
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
             dependsOn: ['job_a'],
           },
           {
             name: 'job_c',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_c!']],
+            steps: [['echo', 'Hello from job_c!']],
             dependsOn: ['job_b'],
           },
         ],
@@ -242,24 +242,24 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_a!']],
+            steps: [['echo', 'Hello from job_a!']],
           },
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
             dependsOn: ['job_a'],
           },
           {
             name: 'job_c',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_c!']],
+            steps: [['echo', 'Hello from job_c!']],
             dependsOn: ['job_a'],
           },
           {
             name: 'job_d',
             image: 'busybox',
-            commands: [['echo', 'Hello from job_d!']],
+            steps: [['echo', 'Hello from job_d!']],
             dependsOn: ['job_b', 'job_c'],
           },
         ],
@@ -310,7 +310,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [
+            steps: [
               ['echo', 'first command'],
               ['sh', '-c', 'sleep 5'],
             ],
@@ -350,7 +350,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'quick job']],
+            steps: [['echo', 'quick job']],
             timeout: 30000, // 30 second timeout
           },
         ],
@@ -387,7 +387,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['sh', '-c', 'exit 42']],
+            steps: [['sh', '-c', 'exit 42']],
           },
         ],
       })
@@ -421,12 +421,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'hello world']],
+            steps: [['echo', 'hello world']],
           },
           {
             name: 'job_b',
             image: 'inexistent-image',
-            commands: [['echo', 'Hello from job_b!']],
+            steps: [['echo', 'Hello from job_b!']],
             dependsOn: ['job_a'],
           },
         ],
@@ -479,12 +479,12 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'a']],
+            steps: [['echo', 'a']],
           },
           {
             name: 'job_b',
             image: 'busybox',
-            commands: [['echo', 'b']],
+            steps: [['echo', 'b']],
           },
         ],
       })
@@ -510,7 +510,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'success']],
+            steps: [['echo', 'success']],
           },
         ],
       })
@@ -541,7 +541,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'inexistent-image-xyz',
-            commands: [['echo', 'will fail']],
+            steps: [['echo', 'will fail']],
           },
         ],
       })
@@ -572,7 +572,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'job_a',
             image: 'busybox',
-            commands: [['echo', 'test']],
+            steps: [['echo', 'test']],
           },
         ],
       })
@@ -595,7 +595,7 @@ describeWithWorkspace('PipelineScheduler', './tests/runner', ctx => {
           {
             name: 'my-job',
             image: 'busybox',
-            commands: [['echo', 'test']],
+            steps: [['echo', 'test']],
           },
         ],
       })

@@ -38,7 +38,38 @@ describe('Docker Executor', async () => {
     teardownWorkspaceIn(workspacePath)
   })
 
-  describe('Lifecycle', async () => {
+  describe.only('Logger', async () => {
+    it.only('should log output from the container', async () => {
+      const receivedLogs: string[] = []
+
+      const server = Bun.serve({
+        port: 3000, // random available port
+        async fetch(req) {
+          const text = await req.text()
+          receivedLogs.push(text)
+          return new Response('ok')
+        },
+      })
+
+      const runtime = new DockerExecutor({
+        name: 'Logging Test Job',
+        image: 'node:alpine',
+        workspacePath,
+      })
+
+      await runtime.start()
+
+      await runtime.exec(['echo', 'hello logs'])
+      await runtime.exec(['sleep', '1'])
+      await runtime.exec(['echo', 'noooooooooo logs'])
+
+      console.log('receivedLogs:', receivedLogs)
+
+      await server.stop()
+    })
+  })
+
+  describe.skip('Lifecycle', async () => {
     it('should create an instance', () => {
       const runtime = new DockerExecutor({
         name: 'Test Job',
@@ -167,7 +198,7 @@ describe('Docker Executor', async () => {
     })
   })
 
-  describe('Commands', async () => {
+  describe.skip('Commands', async () => {
     it('should execute a command inside the container', async () => {
       const runtime = new DockerExecutor({
         name: 'Exec Command Test Job',

@@ -1,6 +1,7 @@
 import type { Subprocess } from 'bun'
 import type { ExecResult, Executor } from './executor'
 import type { Lifecycle } from './lifecycle'
+import { LoggerService } from './services/logger-service'
 
 export class DockerExecutor implements Executor, Lifecycle {
   private _imageName: string
@@ -30,9 +31,11 @@ export class DockerExecutor implements Executor, Lifecycle {
   async start() {
     const runArgs = ['docker', 'run', '-d']
     const workingDirArgs = [
+      // TODO don't need mounts anymore
       '-v',
       `${this._workspacePath}:/workspace`,
       '-w',
+      // TODO this should come through an ENV var
       '/workspace/app',
     ]
     const nameArg = `--name=${this._containerName}`
@@ -61,7 +64,9 @@ export class DockerExecutor implements Executor, Lifecycle {
   async exec(cmd: string[]): Promise<ExecResult> {
     if (!this._containerId) {
       // TODO replace this with a more specific error type
-      throw new Error('Container is not running')
+      throw new Error(
+        'Unable to execute command: Docker container is not running',
+      )
     }
 
     const subprocess: Subprocess<'inherit', 'pipe', 'pipe'> = Bun.spawn(
@@ -72,6 +77,9 @@ export class DockerExecutor implements Executor, Lifecycle {
         stderr: 'pipe',
       },
     )
+
+    const logger = new LoggerService()
+    await logger.pipe(subprocess.stdout, subprocess.stderr)
 
     return {
       stdout: subprocess.stdout,
