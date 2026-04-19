@@ -25,23 +25,11 @@ jobs:
       - coverage-integration: "coverage-integration.xml"
 ```
 
-
-WHO   PipelineScheduler
-  .   specialized docker container for persistence
-WHAT  handle artifacts from one job to another 
-HOW   it uses a docker volume with ephemeral storage
-  .   it's prepared by the Runner
-  .   it happens inside the PipelineScheduler
-WHY   the only logical place rn is the scheduler 
-  .   the jobs and executors are there
-  .   isolation through ephemeral docker volume
-NEXT  how do i send an artifact from a machine to another
-NEXT  i can use a specific Job that does an rsync
-
 ## 04/13
 
-WHO   logger  
-WHAT  
+WHO   registery  
+WHAT  persist job logs
 HOW
 WHY
 NEXT
+?
