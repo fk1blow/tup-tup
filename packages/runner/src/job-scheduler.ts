@@ -1,4 +1,3 @@
-import path from 'path'
 import type { ExecutorFactory } from './executor'
 import { Job } from './job'
 import {
@@ -8,8 +7,8 @@ import {
 import type { JobDefinition } from './job.types'
 import type { RuntimeContext } from './runtime-context'
 
-type JobNameKey = string
-type SettledJobResult = [boolean, JobDefinition, Error?]
+type JobName = string
+type SettledJobResult = [boolean, JobName, Error?]
 type PipelineSchedulerOpts = {
   runtimeCtx: RuntimeContext
   jobsLoggerFactory: (logFilePath: string) => {
@@ -25,16 +24,16 @@ type PipelineSchedulerOpts = {
 
 export class JobScheduler {
   private runtimeCtx: RuntimeContext
-  private jobsLoggerFactory: PipelineSchedulerOpts['jobsLoggerFactory']
-  private dockerExecutorFactory: PipelineSchedulerOpts['dockerExecutorFactory']
+  // private jobsLoggerFactory: PipelineSchedulerOpts['jobsLoggerFactory']
+  // private dockerExecutorFactory: PipelineSchedulerOpts['dockerExecutorFactory']
 
-  private settledJobs: Map<JobNameKey, SettledJobResult> = new Map()
-  private runningJobs: Map<JobNameKey, Promise<SettledJobResult>> = new Map()
+  private settledJobs: Map<JobName, SettledJobResult> = new Map()
+  private runningJobs: Map<JobName, Promise<SettledJobResult>> = new Map()
 
   constructor(opts: PipelineSchedulerOpts) {
     this.runtimeCtx = opts.runtimeCtx
-    this.jobsLoggerFactory = opts.jobsLoggerFactory
-    this.dockerExecutorFactory = opts.dockerExecutorFactory
+    // this.jobsLoggerFactory = opts.jobsLoggerFactory
+    // this.dockerExecutorFactory = opts.dockerExecutorFactory
   }
 
   async *schedule(): AsyncGenerator<PipelineSchedulerEvent> {
@@ -58,18 +57,17 @@ export class JobScheduler {
 
       // Have to wait for both the (still)running jobs and the newly/next added ones
       // otherwise it simply skips the jobs that might have not settled yet(and still running)
-      const [success, jobDefinition, error] = await Promise.race(
+      const [success, jobName, error] = await Promise.race(
         this.runningJobs.values(),
       )
 
-      const { name } = jobDefinition
-      this.runningJobs.delete(name)
-      this.settledJobs.set(name, [success, jobDefinition, error])
+      this.runningJobs.delete(jobName)
+      this.settledJobs.set(jobName, [success, jobName, error])
 
       yield {
         type: PipelineSchedulerEventType.JobSettled,
         pipeline: this.runtimeCtx.pipeline.name,
-        job: name,
+        job: jobName,
         success,
         error,
       }
@@ -77,31 +75,30 @@ export class JobScheduler {
   }
 
   private async runJob(definition: JobDefinition): Promise<SettledJobResult> {
-    const executor = this.dockerExecutorFactory({
-      workspacePath: this.runtimeCtx.paths.workspace,
-      image: definition.image,
-      name: definition.name,
-    })
-    const logger = this.jobsLoggerFactory(
-      path.join(this.runtimeCtx.paths.workspace, 'logs', definition.name),
-    )
+    // const executor = this.dockerExecutorFactory({
+    //   workspacePath: this.runtimeCtx.paths.workspace,
+    //   image: definition.image,
+    //   name: definition.name,
+    // })
+    // const logger = this.jobsLoggerFactory(
+    //   path.join(this.runtimeCtx.paths.workspace, 'logs', definition.name),
+    // )
     const job = new Job({
       definition,
-      logger,
       executor,
     })
 
     // Executor could fail to start for various reasons, like invalid image, docker daemon not running, etc.
-    try {
-      await executor.start()
-    } catch (error) {
-      await logger.close()
-      return [
-        false,
-        definition,
-        error instanceof Error ? error : new Error(String(error)),
-      ]
-    }
+    // try {
+    //   await executor.start()
+    // } catch (error) {
+    //   await logger.close()
+    //   return [
+    //     false,
+    //     definition,
+    //     error instanceof Error ? error : new Error(String(error)),
+    //   ]
+    // }
 
     const jobRun = job.run()
 
@@ -122,12 +119,12 @@ export class JobScheduler {
       result = timeoutRace.result
     } else {
       await job.abort()
-      result = [false, definition, new Error('Job execution timed out')]
+      result = [false, definition.name, new Error('Job execution timed out')]
     }
 
-    await executor.stop()
+    // await executor.stop()
     // TODO this needs to go...
-    await logger.close()
+    // await logger.close()
 
     return result
   }

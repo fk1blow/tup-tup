@@ -1,30 +1,24 @@
 # TODO
-- [ ] refactor the provisioner(progressive)
-- [ ] integrate logger
-- [ ] side effects and services
-- [ ] event log and runner state
+- [x] update the pipeline definition
+- [ ] refactor docker executor for shared volume
+- [ ] create ArtifactStore interface and VolumeArtifactStore impl
+- [ ] update the Job class
+- [ ] ...
 
-## overview
+## refactor docker executor for shared volume
+- receives the path to the job-name
+  - `/workspace/artifacts/<job-name>`
+- mounts it at `/container-workspace/artifacts`
+- logging should start on executor's `start()`
+  - capture all the container's logs, not just when it `execs`
 
-This would progress while developing the other parts(eg: logging) so that
-the interface evolves naturally and gradually.
+## create ArtifactStore interface and VolumeArtifactStore impl
+- define `saveArtifact()` and `getArtifact()` 
+- the store already knows full path
+  - could be `/workspace/artifacts/<job-name>/<artifact-name>`
+  - don't need the `run-id`, volume's lifecycle is per run anyway
 
-### provisioner
-- download the config file from the repo
-- parse and validate the config file
-- enhance and expand each job actions
-  - parse all the commands
-  - extract the ones that being with `actions.`
-- extract env variables
-  - repository_url
-  - repository_branch
-  - checkout_service_endpoint
-  - logs_service_endpoint
-  - artifacts_service_endpoint
-
-## integrate logger
-need to be able to catch logs of a running container
-
-~~inside the job's `runCommand()`, merge the subprocess' stdout/stderr, and send
-them to the logger service~~
-This is handled by the executor itself, not the job's responsability!
+## update the Job class
+- remove the logging functionality temporarely
+- leave the job-scheduler as is for now
+- refactor tests

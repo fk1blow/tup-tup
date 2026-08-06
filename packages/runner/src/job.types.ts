@@ -7,7 +7,7 @@ const ArtifactMap = z.record(
   z.string().min(1, 'Artifact path cannot be empty'),
 )
 
-export const JobDefinition = z.object({
+export const JobDefinitionSchema = z.object({
   name: z
     .string({ error: 'Job name is required' })
     .min(1, 'Job name cannot be empty'),
@@ -20,21 +20,6 @@ export const JobDefinition = z.object({
   timeout: z.number().optional(),
 })
 
-export type JobDefinition = z.infer<typeof JobDefinition>
+export type JobDefinition = z.infer<typeof JobDefinitionSchema>
 
-export const JobDefinitionJson = z
-  .string({ error: 'Job definition is required' })
-  .transform((val, ctx) => {
-    try {
-      return JSON.parse(val)
-    } catch {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Invalid JSON for job definition',
-      })
-      return z.NEVER
-    }
-  })
-  .pipe(JobDefinition)
-
-export type JobDefinitionJson = z.infer<typeof JobDefinitionJson>
+export type JobName = JobDefinition['name']

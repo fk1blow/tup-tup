@@ -1,13 +1,13 @@
 import toposort from 'toposort'
 import z from 'zod'
-import { JobDefinition } from './job.types'
+import { JobDefinitionSchema } from './job.types'
 
-export const PipelineDefinition = z.object({
+export const PipelineDefinitionSchema = z.object({
   name: z
     .string({ error: 'Pipeline name is required' })
     .min(1, 'Pipeline name cannot be empty'),
   jobs: z
-    .array(JobDefinition)
+    .array(JobDefinitionSchema)
     .nonempty({ message: 'At least one job is required' })
     .superRefine((jobs, ctx) => {
       // Unique job names
@@ -76,7 +76,8 @@ export const PipelineDefinition = z.object({
       for (const job of jobs) {
         for (const artifact of Object.keys(job.inputs ?? {})) {
           const from = producer.get(artifact)
-          if (from !== undefined && from !== job.name) edges.push([from, job.name])
+          if (from !== undefined && from !== job.name)
+            edges.push([from, job.name])
         }
         for (const dep of job.dependsOn ?? []) {
           if (jobNames.has(dep) && dep !== job.name) edges.push([dep, job.name])
@@ -95,4 +96,4 @@ export const PipelineDefinition = z.object({
     }),
 })
 
-export type PipelineDefinition = z.infer<typeof PipelineDefinition>
+export type PipelineDefinition = z.infer<typeof PipelineDefinitionSchema>

@@ -1,6 +1,6 @@
+import type { JobDefinition } from 'src/job.types'
 import { DockerExecutor } from '../../src/docker-executor'
 import { Job } from '../../src/job'
-import { JobDefinition } from '../../src/job.types'
 import { TestListLogger } from './test-list-logger'
 
 /**

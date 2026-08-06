@@ -1,6 +1,9 @@
 import { DockerExecutor } from '../../src/docker-executor'
 import { JobScheduler } from '../../src/job-scheduler'
-import type { PipelineDefinition } from '../../src/pipeline.types'
+import type {
+  PipelineDefinition,
+  PipelineDefinitionSchema,
+} from '../../src/pipeline.types'
 import { TestListLogger } from './test-list-logger'
 import type { WorkspaceContext } from './workspace-describe'
 

@@ -38,34 +38,39 @@ describe('Docker Executor', async () => {
     teardownWorkspaceIn(workspacePath)
   })
 
-  describe.only('Logger', async () => {
-    it.only('should log output from the container', async () => {
-      const receivedLogs: string[] = []
+  describe.only('Refactor', async () => {
+    it.only('foo', async () => {
+      const s = Bun.spawn(['docker', 'volume', 'create', 'shared-volume'])
+      // Create a temporary container which uses the shared volume
+      // and then writes a file to it, so that we can check if the file is visible from the host
+      // now create a dummy.txt file inside the shared volume
+      const f = Bun.spawn([
+        'docker',
+        'run',
+        '--rm',
+        '--mount',
+        'src=shared-volume,dst=/data,type=volume',
+        'alpine',
+        'sh',
+        '-c',
+        'echo "Hello from inside the container" > /data/dummy.txt',
+      ])
 
-      const server = Bun.serve({
-        port: 3000, // random available port
-        async fetch(req) {
-          const text = await req.text()
-          receivedLogs.push(text)
-          return new Response('ok')
-        },
-      })
+      await s.exited
+      await f.exited
 
-      const runtime = new DockerExecutor({
+      const executor = new DockerExecutor({
         name: 'Logging Test Job',
         image: 'node:alpine',
-        workspacePath,
+        sharedVolume: 'shared-volume',
+        // workspacePath,
       })
 
-      await runtime.start()
+      await executor.start()
 
-      await runtime.exec(['echo', 'hello logs'])
-      await runtime.exec(['sleep', '1'])
-      await runtime.exec(['echo', 'noooooooooo logs'])
+      await executor.exec(['cat', '/workspace/artifacts/dummy.txt'])
 
-      console.log('receivedLogs:', receivedLogs)
-
-      await server.stop()
+      expect(true).toBe(true)
     })
   })
 

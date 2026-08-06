@@ -1,23 +1,32 @@
+import mergeStreams from '@sindresorhus/merge-streams'
 import type { Subprocess } from 'bun'
+import { Readable } from 'node:stream'
+import type { ReadStream } from 'node:tty'
 import type { ExecResult, Executor } from './executor'
 import type { Lifecycle } from './lifecycle'
-import { LoggerService } from './services/logger-service'
 
 export class DockerExecutor implements Executor, Lifecycle {
   private _imageName: string
   private _containerName: string
-  private _workspacePath: string
+  private _sharedVolume: string
+  // private _workspacePath: string
+  // private _logFilePath: string
   private _containerId: string | null = null
+  // private _logProcess: Subprocess<'inherit', 'pipe', 'pipe'> | null = null
 
   constructor(opts: {
     image: string
     name: string
-    workspacePath: string
+    sharedVolume: string
+    // workspacePath: string
+    // logFilePath: string
   }) {
-    const { image, name, workspacePath } = opts
+    const { image, name } = opts
     this._imageName = image
     this._containerName = `tuptup-${name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
-    this._workspacePath = workspacePath
+    this._sharedVolume = opts.sharedVolume
+    // this._workspacePath = workspacePath
+    // this._logFilePath = logFilePath
   }
 
   get containerName() {
@@ -32,11 +41,14 @@ export class DockerExecutor implements Executor, Lifecycle {
     const runArgs = ['docker', 'run', '-d']
     const workingDirArgs = [
       // TODO don't need mounts anymore
-      '-v',
-      `${this._workspacePath}:/workspace`,
+      // '-v',
+      // `${this._workspacePath}:/workspace`,
+      // Workspace
       '-w',
-      // TODO this should come through an ENV var
-      '/workspace/app',
+      '/workspace',
+      // Shared volume
+      '--mount',
+      `src=${this._sharedVolume},dst=/workspace/artifacts,type=volume`,
     ]
     const nameArg = `--name=${this._containerName}`
     const imageArg = this._imageName
@@ -59,6 +71,18 @@ export class DockerExecutor implements Executor, Lifecycle {
     if (exitCode !== 0) {
       throw new Error(stderrText || `Docker failed with exit code ${exitCode}`)
     }
+
+    // this._logProcess = Bun.spawn(['docker', 'logs', '-f', this._containerId!], {
+    //   stdout: 'pipe',
+    //   stderr: 'pipe',
+    // })
+
+    // const merged = mergeStreams(
+    //   [this._logProcess.stdout, this._logProcess.stderr].map(stream =>
+    //     Readable.fromWeb(stream),
+    //   ),
+    // )
+    // Bun.write(this._logFilePath, new Response(Readable.toWeb(merged)))
   }
 
   async exec(cmd: string[]): Promise<ExecResult> {
@@ -78,18 +102,22 @@ export class DockerExecutor implements Executor, Lifecycle {
       },
     )
 
-    const logger = new LoggerService()
-    await logger.pipe(subprocess.stdout, subprocess.stderr)
+    // const logger = new LoggerService()
+    // await logger.pipe(subprocess.stdout, subprocess.stderr)
 
     return {
-      stdout: subprocess.stdout,
-      stderr: subprocess.stderr,
+      // stdout: subprocess.stdout,
+      // stderr: subprocess.stderr,
       exitCode: subprocess.exited,
     }
   }
 
   async stop() {
     if (!this._containerId) return
+
+    // this._logProcess?.kill()
+    // await this._logProcess?.exited
+    // this._logProcess = null
 
     const subprocess = Bun.spawn(['docker', 'rm', '-f', this._containerId], {
       stdout: 'pipe',
@@ -105,8 +133,6 @@ export class DockerExecutor implements Executor, Lifecycle {
   }
 
   async kill() {
-    // Don't really know if this should throw an error if there's no container running
-    // but for now let's just make it a no-op
     if (!this._containerId) return
 
     const subprocess = Bun.spawn(['docker', 'kill', this._containerId], {
@@ -114,6 +140,16 @@ export class DockerExecutor implements Executor, Lifecycle {
       stderr: 'inherit',
     })
 
+    // this._logProcess?.kill()
+    // await this._logProcess?.exited
+    // this._logProcess = null
+
     await subprocess.exited
   }
 }
+
+type Foo =
+  | { type: 'asdfasd' }
+  | {
+      type: 'bbb'
+    }

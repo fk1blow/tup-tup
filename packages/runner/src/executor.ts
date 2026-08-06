@@ -1,8 +1,8 @@
 import type { Lifecycle } from './lifecycle'
 
 export type ExecResult = {
-  stdout: ReadableStream
-  stderr: ReadableStream
+  // stdout: ReadableStream
+  // stderr: ReadableStream
   exitCode: Promise<number>
 }
 

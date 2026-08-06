@@ -27,9 +27,9 @@ jobs:
 
 ## 04/13
 
-WHO   registery  
-WHAT  persist job logs
-HOW
-WHY
-NEXT
+WHO   shared volume
+WHAT  share files between jobs and the runner
+HOW   docker volume 
+WHY   need to store artifacts between jobs, store logs, etc
+NEXT  ...
 ?

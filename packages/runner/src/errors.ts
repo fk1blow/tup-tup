@@ -13,3 +13,10 @@ export class JobExecutionError extends Error {
     this.name = 'JobExecutionError'
   }
 }
+
+export class JobStepFailed extends Error {
+  constructor(jobName: string, step: string, exitCode: number) {
+    super(`Job "${jobName}" step "${step}" failed with exit code ${exitCode}`)
+    this.name = 'JobStepFailed'
+  }
+}

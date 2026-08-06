@@ -1,4 +1,7 @@
-import type { PipelineDefinition } from './pipeline.types'
+import type {
+  PipelineDefinition,
+  PipelineDefinitionSchema,
+} from './pipeline.types'
 
 /**
  * RuntimeContext is the single source of truth for pipeline execution.

@@ -1,51 +1,52 @@
 import type { Executor } from '../src/executor'
-import type { JobDefinition } from '../src/job.types'
-import { JobDefinition as JobDefinitionParser } from '../src/job.types'
+import type { JobDefinition, JobName } from '../src/job.types'
 
 export class Job {
   private definition: JobDefinition
   private executor: Executor
-  private logger: {
-    pipe: (...streams: ReadableStream[]) => Promise<void>
-    close: () => Promise<void>
-  }
 
   constructor(opts: {
     definition: JobDefinition
-    logger: {
-      pipe: (...streams: ReadableStream[]) => Promise<void>
-      close: () => Promise<void>
-    }
     executor: Executor
   }) {
-    const { definition, logger, executor } = opts
+    const { definition, executor } = opts
 
     this.definition = definition
-    this.logger = logger
     this.executor = executor
+  }
 
-    const { success, error } = JobDefinitionParser.safeParse(opts.definition)
-    if (!success) {
-      throw new Error(`Invalid job definition: ${error.message}`)
-    }
+  async prepare() {
+    // TODO use this inside the job scheduler to prepare the job for execution
+    // start the docker executor
+    // also could throw if the exeucotor fails to start or something else
+    // inside the executor implementation
   }
 
   async run() {
     let jobSucceeded = true
 
     for (const [_, command] of this.definition.steps.entries()) {
-      // TODO the `command`'s type
       const exitCode = await this.runCommand(command)
 
       if (exitCode !== null && exitCode > 0) {
         jobSucceeded = false
+        return Promise.resolve([
+          jobSucceeded,
+          // TODO use Error subclasses
+          this.definition.name,
+          new Error(`Step failed with exit code + ${exitCode}`),
+        ] as [boolean, JobName, Error])
         break
       }
     }
 
-    return Promise.resolve([jobSucceeded, this.definition] as [
+    // TODO need to return errors as well
+    // StepFailed
+    // OutputMissing
+    // InputMissing
+    return Promise.resolve([jobSucceeded, this.definition.name] as [
       boolean,
-      JobDefinition,
+      JobName,
     ])
   }
 
